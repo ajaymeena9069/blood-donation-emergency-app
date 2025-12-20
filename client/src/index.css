@@ -1,0 +1,52 @@
+@import "tailwindcss";
+
+@layer components {
+  .form-input {
+    @apply w-full px-4 py-2 rounded-lg border border-gray-300 focus:border-red-500 focus:ring-2 
+           focus:ring-red-200 outline-none transition-all;
+  }
+  .form-label {
+    @apply text-sm font-medium text-gray-700;
+  }
+}
+
+
+@import "leaflet/dist/leaflet.css";
+
+.container {
+    max-width: 1200px;
+    /* Max width for large screens */
+    width: 90%;
+    /* Default width */
+    margin: 0 auto;
+    /* Center align */
+    /* padding: 20px; */
+    transition: all 0.3s ease;
+}
+
+/* =========================
+   Responsive Breakpoints
+========================= */
+@media (max-width: 1024px) {
+    .container {
+        width: 95%;
+        padding: 18px;
+    }
+}
+
+@media (max-width: 768px) {
+    .container {
+        width: 95%;
+        padding: 15px;
+        border-radius: 10px;
+    }
+}
+
+@media (max-width: 480px) {
+    .container {
+        width: 100%;
+        padding: 12px;
+        border-radius: 8px;
+    }
+}
+
