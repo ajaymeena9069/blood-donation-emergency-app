@@ -17,7 +17,7 @@ import BloodCamps from "./pages/BloodCamps";
 import RegisterationPage from "./pages/RegisterationPage";
 import LoginOptions from "./pages/Login";
 import PatientDashboard from "./pages/PatientDashboard";
-import PatientRequests from "./component/PatientRequests";
+import PatientRequests from "./component/Common/PatientRequests";
 import SinglePatientRequest from "./component/ui/SinglePatientRequest";
 import CompletedRequests from "./component/ui/CompletedRequests";
 import AllNotifications from "./component/ui/AllNotifications";
@@ -89,15 +89,7 @@ const routes = createBrowserRouter([
         ),
       },
       {
-        path: "patient/requests",
-        element: (
-          <ProtectedRoute role="patient">
-            <PatientRequests />
-          </ProtectedRoute>
-        ),
-      },
-      {
-        path: "patient/requests/:id",
+        path: "patient/request-details/:id",
         element: (
           <ProtectedRoute role="patient">
             <SinglePatientRequest />
@@ -105,10 +97,10 @@ const routes = createBrowserRouter([
         ),
       },
       {
-        path: "/patient/completed/requests",
+        path: "patient/requests/:status",
         element: (
           <ProtectedRoute role="patient">
-            <CompletedRequests />
+            <PatientRequests />
           </ProtectedRoute>
         ),
       },

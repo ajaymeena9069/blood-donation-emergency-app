@@ -1,21 +1,33 @@
 import { useSelector } from "react-redux";
-import { useGetPatientRequestsQuery } from "../features/api/bloodApi";
-import { NavLink } from "react-router-dom";
+import { useGetPatientRequestsQuery } from "../../features/api/bloodApi";
+import { NavLink, useParams } from "react-router-dom";
 import { FaArrowLeft, FaPlusCircle, FaCalendarDay, FaHospital, FaMapMarkerAlt, FaTint } from "react-icons/fa";
 import { useState } from "react";
-import FlashMessage, { getMessage } from "../component/FlashMessage";
+import FlashMessage, { getMessage } from "../FlashMessage";
 
 export default function PatientRequests() {
   const { user } = useSelector((state) => state.auth);
   const { data, isLoading, isError } = useGetPatientRequestsQuery(user?.id);
+  const { status } = useParams();
+  const requests = data?.data || [];
+  console.log(status);
+  function dynamicFiltering() {
+    if (status === "all") {
+      return requests;
+    } else if (status === "pending") {
+      return requests?.filter((curReq) => curReq?.status === status);
+    } else {
+      return requests.filter((curReq) => curReq?.status === status);
+    }
+  }
 
+  const sortedRequest = dynamicFiltering();
   // FlashMessage state
   const [flash, setFlash] = useState({
     type: "",
     msg: "",
   });
 
-  const requests = data?.data || [];
 
   // Status configuration
   const statusConfig = {
@@ -90,7 +102,8 @@ export default function PatientRequests() {
         </div>
 
         {/* Stats Summary */}
-        {requests.length > 0 && (
+        {/* This feature will may be implement in future */}
+        {/* {requests.length > 0 && (
           <div className="bg-white p-4 rounded-xl shadow-sm border mb-6">
             <div className="flex items-center gap-4">
               <div className="text-center">
@@ -113,7 +126,7 @@ export default function PatientRequests() {
               </div>
             </div>
           </div>
-        )}
+        )} */}
       </div>
 
       {/* LOADING */}
@@ -147,10 +160,10 @@ export default function PatientRequests() {
       {/* REQUEST LIST */}
       {!isLoading && requests.length > 0 && (
         <div className="space-y-4">
-          {requests.map((req) => {
+          {sortedRequest?.map((req) => {
             const status = statusConfig[req.status] || statusConfig.pending;
             return (
-              <NavLink to={`${req._id}`} key={req._id}>
+              <NavLink to={`/patient/request-details/${req?._id}`} key={req._id}>
                 <div className="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md hover:border-red-200 transition-all p-5">
                   <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     {/* Left Content */}

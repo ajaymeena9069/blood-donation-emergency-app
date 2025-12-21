@@ -128,7 +128,7 @@ export default function PatientDashboard() {
           </motion.button>
         </NavLink>
 
-        <NavLink to="/patient/requests" className="flex-1">
+        <NavLink to="/patient/requests/all" className="flex-1">
           <motion.button
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
@@ -147,7 +147,7 @@ export default function PatientDashboard() {
         animate={{ opacity: 1 }}
         transition={{ delay: 0.1 }}
       >
-        <NavLink to="/patient/requests">
+        <NavLink to={`/patient/requests/all`}>
           <div className="rounded-xl bg-white shadow-md hover:shadow-xl transition-all hover:-translate-y-1 p-5 cursor-pointer border-l-4 border-red-500">
             <div className="flex items-center justify-between">
               <div>
@@ -168,7 +168,7 @@ export default function PatientDashboard() {
           </div>
         </NavLink>
 
-        <NavLink to="/patient/completed/requests">
+        <NavLink to="/patient/requests/completed">
           <div className="rounded-xl bg-white shadow-md hover:shadow-xl transition-all hover:-translate-y-1 p-5 cursor-pointer border-l-4 border-green-500">
             <div className="flex items-center justify-between">
               <div>
@@ -189,24 +189,26 @@ export default function PatientDashboard() {
           </div>
         </NavLink>
 
-        <div className="rounded-xl bg-white shadow-md hover:shadow-xl transition-all hover:-translate-y-1 p-5 border-l-4 border-yellow-500">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-gray-500 text-sm font-medium">Pending</p>
-              <p className="text-2xl font-bold mt-1 text-yellow-600">
-                {requestsLoading ? (
-                  <span className="text-gray-400">...</span>
-                ) : (
-                  pendingRequests
-                )}
-              </p>
+        <NavLink to={`/patient/requests/pending`}>
+          <div className="rounded-xl bg-white shadow-md hover:shadow-xl transition-all hover:-translate-y-1 p-5 border-l-4 border-yellow-500">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-gray-500 text-sm font-medium">Pending</p>
+                <p className="text-2xl font-bold mt-1 text-yellow-600">
+                  {requestsLoading ? (
+                    <span className="text-gray-400">...</span>
+                  ) : (
+                    pendingRequests
+                  )}
+                </p>
+              </div>
+              <FaExclamationCircle className="text-3xl text-yellow-500 opacity-80" />
             </div>
-            <FaExclamationCircle className="text-3xl text-yellow-500 opacity-80" />
+            <div className="mt-3 text-xs text-gray-500">
+              Awaiting donor response
+            </div>
           </div>
-          <div className="mt-3 text-xs text-gray-500">
-            Awaiting donor response
-          </div>
-        </div>
+        </NavLink>
 
         <NavLink to="/patient/notifications">
           <div className="rounded-xl bg-white shadow-md hover:shadow-xl transition-all hover:-translate-y-1 p-5 cursor-pointer border-l-4 border-blue-500">
@@ -241,7 +243,7 @@ export default function PatientDashboard() {
         >
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-xl font-bold text-gray-800">Recent Blood Requests</h2>
-            <NavLink to="/patient/requests">
+            <NavLink to="/patient/requests/all">
               <p className="text-red-600 hover:text-red-700 text-sm font-semibold flex items-center gap-1">
                 View All →
               </p>
