@@ -1,17 +1,12 @@
-/* eslint-disable no-unused-vars */
 import React, { useState } from "react";
 import { useLoginPatientMutation } from "../features/api/bloodApi";
-import { FaLock, FaEnvelope } from "react-icons/fa";
+import { FaLock, FaEnvelope, FaUserInjured } from "react-icons/fa";
 import { setCredentials } from "../features/auth/authSlice";
 import { useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
-import { motion } from "framer-motion";
-
-// 🔥 FlashMessage Component
 import FlashMessage, { getMessage } from "../component/FlashMessage";
 
 export default function PatientLogin() {
-
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [flash, setFlash] = useState({ type: "", message: "" });
@@ -20,117 +15,102 @@ export default function PatientLogin() {
   const dispatch = useDispatch();
   const [loginPatient, { isLoading }] = useLoginPatientMutation();
 
-  const showFlash = (type, section, key) => {
-    setFlash({ type, message: getMessage(section, key) });
-
-    setTimeout(() => {
-      setFlash({ type: "", message: "" });
-    }, 3000);
-  };
-
   const handleLogin = async (e) => {
     e.preventDefault();
-
     if (!email || !password) {
-      showFlash("error", "auth", "loginFailed");
+      setFlash({ type: "error", message: "Please fill in all fields" });
       return;
     }
 
     try {
       const res = await loginPatient({ email, password }).unwrap();
-
       dispatch(setCredentials({ token: res.token, role: res.role, user: res.user }));
-
-      showFlash("success", "auth", "loginSuccess");
-
-      setTimeout(() => navigate("/patient/dashboard"), 600);
-
+      setFlash({ type: "success", message: "Login successful!" });
+      setTimeout(() => navigate("/patient/dashboard"), 500);
     } catch (error) {
-      showFlash("error", "auth", "loginFailed");
+      setFlash({ type: "error", message: error?.data?.message || "Invalid credentials" });
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4 relative">
-
-      {/* Flash Message */}
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
       <FlashMessage
         type={flash.type}
         message={flash.message}
         onClose={() => setFlash({ type: "", message: "" })}
       />
 
-      <motion.div
-        initial={{ opacity: 0, y: 40 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, ease: "easeOut" }}
-        className="bg-white shadow-xl rounded-xl p-8 w-full max-w-md"
-      >
+      <div className="w-full max-w-sm">
+        {/* Header */}
+        <div className="text-center mb-8">
+          <div className="mb-4">
+            <FaUserInjured className="text-4xl text-blue-600 mx-auto" />
+          </div>
+          <h2 className="text-xl font-semibold text-gray-800">Patient Login</h2>
+          <p className="text-gray-600 text-sm mt-1">Access your patient account</p>
+        </div>
 
-        <motion.h1
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="text-3xl font-bold text-center mb-6 text-gray-800"
-        >
-          Login Patient
-        </motion.h1>
+        {/* Form */}
+        <div className="bg-white rounded-lg border border-gray-200 p-6">
+          <form onSubmit={handleLogin} className="space-y-4">
+            
+            <div>
+              <label className="block text-sm text-gray-700 mb-1">Email</label>
+              <div className="relative">
+                <FaEnvelope className="absolute left-3 top-3 text-gray-400 text-sm" />
+                <input
+                  type="email"
+                  className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:border-blue-500 focus:outline-none"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="you@example.com"
+                  required
+                />
+              </div>
+            </div>
 
-        <form onSubmit={handleLogin} className="space-y-5">
+            <div>
+              <label className="block text-sm text-gray-700 mb-1">Password</label>
+              <div className="relative">
+                <FaLock className="absolute left-3 top-3 text-gray-400 text-sm" />
+                <input
+                  type="password"
+                  className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:border-blue-500 focus:outline-none"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  required
+                />
+              </div>
+            </div>
 
-          {/* Email */}
-          <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.4 }}
-            className="flex items-center gap-3 bg-gray-100 p-3 rounded-lg"
-          >
-            <FaEnvelope className="text-gray-500 text-lg" />
-            <input
-              type="email"
-              placeholder="Enter Email"
-              className="bg-transparent w-full outline-none"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
-          </motion.div>
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="w-full py-2.5 bg-blue-600 text-white rounded-md font-medium hover:bg-blue-700 transition disabled:opacity-50"
+            >
+              {isLoading ? "Logging in..." : "Login"}
+            </button>
+          </form>
 
-          {/* Password */}
-          <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.4 }}
-            className="flex items-center gap-3 bg-gray-100 p-3 rounded-lg"
-          >
-            <FaLock className="text-gray-500 text-lg" />
-            <input
-              type="password"
-              placeholder="Enter Password"
-              className="bg-transparent w-full outline-none"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
-          </motion.div>
-
-          {/* Login Button */}
-          <motion.button
-            whileTap={{ scale: 0.95 }}
-            whileHover={{ scale: 1.03 }}
-            type="submit"
-            disabled={isLoading}
-            className="w-full bg-red-600 text-white py-3 rounded-lg font-semibold hover:bg-red-700 transition-all"
-          >
-            {isLoading ? "Logging in..." : "Login"}
-          </motion.button>
-        </form>
-
-        <p className="text-center mt-4 text-sm text-gray-600">
-          Don’t have an account?{" "}
-          <a href="/donor/register" className="text-red-600 font-semibold">
-            Register
-          </a>
-        </p>
-      </motion.div>
+          <div className="mt-6 pt-5 border-t border-gray-100">
+            <div className="flex justify-between text-sm">
+              <button
+                onClick={() => navigate("/register/patient")}
+                className="text-blue-600 hover:text-blue-700"
+              >
+                Create account
+              </button>
+              <button
+                onClick={() => navigate("/login")}
+                className="text-gray-600 hover:text-gray-800"
+              >
+                ← Back
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

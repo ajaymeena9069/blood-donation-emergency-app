@@ -14,7 +14,6 @@ import FindDonors from "./pages/FindDonors";
 import { Services } from "./pages/Services";
 import Contact from "./pages/Contact";
 import BloodCamps from "./pages/BloodCamps";
-import RegisterationPage from "./pages/RegisterationPage";
 import LoginOptions from "./pages/Login";
 import PatientDashboard from "./pages/PatientDashboard";
 import PatientRequests from "./component/Common/PatientRequests";
@@ -23,6 +22,7 @@ import CompletedRequests from "./component/ui/CompletedRequests";
 import AllNotifications from "./component/ui/AllNotifications";
 import DonorNotifications from "./component/ui/DonorNotifications";
 import DonorMatchingRequests from "./component/ui/DonorMatchingRequests";
+import RegisterToggle from "./pages/RegisterationPage";
 
 const routes = createBrowserRouter([
   {
@@ -46,11 +46,17 @@ const routes = createBrowserRouter([
       // REGISTER ROUTES
       {
         path: "register",
-        element: <RegisterationPage />,
-        children: [
-          { path: "donor", element: <DonorRegister /> },
-          { path: "patient", element: <PatientRegister /> },
-        ],
+        element: <RegisterToggle />,
+      },
+
+      {
+        path: "register/donor",
+        element: <DonorRegister />
+      },
+
+      {
+        path: "register/patient",
+        element: <PatientRegister />
       },
 
       // DASHBOARDS

@@ -3,120 +3,114 @@ import { setCredentials } from '../features/auth/authSlice';
 import { useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { useLoginDonorMutation } from '../features/api/bloodApi';
-import { FaEnvelope, FaLock } from 'react-icons/fa';
+import { FaEnvelope, FaLock, FaTint } from 'react-icons/fa';
 import FlashMessage, { getMessage } from '../component/FlashMessage';
 
 export default function DonorLogin() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [flash, setFlash] = useState({
-    type: "",
-    message: ""
-  });
+  const [flash, setFlash] = useState({ type: "", message: "" });
 
   const dispatch = useDispatch();
   const navigate = useNavigate();
-
   const [loginDonor, { isLoading }] = useLoginDonorMutation();
 
   const handleLogin = async (e) => {
     e.preventDefault();
-
     if (!email || !password) {
-      setFlash({
-        type: "error",
-        message: getMessage("auth", "loginFailed") // Predefined message
-      });
+      setFlash({ type: "error", message: "Please fill in all fields" });
       return;
     }
 
     try {
       const res = await loginDonor({ email, password }).unwrap();
-
-      dispatch(setCredentials({
-        token: res.token,
-        role: res.role,
-        user: res.user
-      }));
-
-      setFlash({
-        type: "success",
-        message: getMessage("auth", "loginSuccess") // Predefined message
-      });
-
-      setTimeout(() => navigate("/donor/dashboard"), 600);
+      dispatch(setCredentials({ token: res.token, role: res.role, user: res.user }));
+      setFlash({ type: "success", message: "Login successful!" });
+      setTimeout(() => navigate("/donor/dashboard"), 500);
     } catch (error) {
-      console.error("Error:", error);
-
-      setFlash({
-        type: "error",
-        message:
-          error?.data?.message ||
-          getMessage("auth", "loginFailed") // Predefined message fallback
-      });
+      setFlash({ type: "error", message: error?.data?.message || "Invalid credentials" });
     }
-
   };
 
   return (
-    <>
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
       <FlashMessage
         type={flash.type}
         message={flash.message}
         onClose={() => setFlash({ type: "", message: "" })}
       />
-      <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4">
-        <div className="bg-white shadow-xl rounded-xl p-8 w-full max-w-md">
 
-          <h1 className="text-3xl font-bold text-center mb-6 text-gray-800">
-            Login Donor
-          </h1>
+      <div className="w-full max-w-sm">
+        {/* Header */}
+        <div className="text-center mb-8">
+          <div className="mb-4">
+            <FaTint className="text-4xl text-red-600 mx-auto" />
+          </div>
+          <h2 className="text-xl font-semibold text-gray-800">Donor Login</h2>
+          <p className="text-gray-600 text-sm mt-1">Access your donor account</p>
+        </div>
 
-          <form onSubmit={handleLogin} className="space-y-5">
-
-            {/* Email */}
-            <div className="flex items-center gap-3 bg-gray-100 p-3 rounded-lg">
-              <FaEnvelope className="text-gray-500 text-lg" />
-              <input
-                type="email"
-                placeholder="Enter Email"
-                className="bg-transparent w-full outline-none"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
+        {/* Form */}
+        <div className="bg-white rounded-lg border border-gray-200 p-6">
+          <form onSubmit={handleLogin} className="space-y-4">
+            
+            <div>
+              <label className="block text-sm text-gray-700 mb-1">Email</label>
+              <div className="relative">
+                <FaEnvelope className="absolute left-3 top-3 text-gray-400 text-sm" />
+                <input
+                  type="email"
+                  className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:border-red-500 focus:outline-none"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="you@example.com"
+                  required
+                />
+              </div>
             </div>
 
-            {/* Password */}
-            <div className="flex items-center gap-3 bg-gray-100 p-3 rounded-lg">
-              <FaLock className="text-gray-500 text-lg" />
-              <input
-                type="password"
-                placeholder="Enter Password"
-                className="bg-transparent w-full outline-none"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-              />
+            <div>
+              <label className="block text-sm text-gray-700 mb-1">Password</label>
+              <div className="relative">
+                <FaLock className="absolute left-3 top-3 text-gray-400 text-sm" />
+                <input
+                  type="password"
+                  className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:border-red-500 focus:outline-none"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  required
+                />
+              </div>
             </div>
 
-            {/* Login Button */}
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full bg-red-600 text-white py-3 rounded-lg font-semibold hover:bg-red-700 transition-all"
+              className="w-full py-2.5 bg-red-600 text-white rounded-md font-medium hover:bg-red-700 transition disabled:opacity-50"
             >
               {isLoading ? "Logging in..." : "Login"}
             </button>
           </form>
 
-          <p className="text-center mt-4 text-sm text-gray-600">
-            Don’t have an account?{" "}
-            <a href="/register/donor" className="text-red-600 font-semibold">
-              Register
-            </a>
-          </p>
+          <div className="mt-6 pt-5 border-t border-gray-100">
+            <div className="flex justify-between text-sm">
+              <button
+                onClick={() => navigate("/register/donor")}
+                className="text-red-600 hover:text-red-700"
+              >
+                Create account
+              </button>
+              <button
+                onClick={() => navigate("/login")}
+                className="text-gray-600 hover:text-gray-800"
+              >
+                ← Back
+              </button>
+            </div>
+          </div>
         </div>
       </div>
-    </>
-
+    </div>
   );
 }
