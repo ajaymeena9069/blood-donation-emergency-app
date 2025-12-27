@@ -10,7 +10,6 @@ export default function PatientRequests() {
   const { data, isLoading, isError } = useGetPatientRequestsQuery(user?.id);
   const { status } = useParams();
   const requests = data?.data || [];
-  console.log(status);
   function dynamicFiltering() {
     if (status === "all") {
       return requests;

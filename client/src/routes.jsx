@@ -1,10 +1,5 @@
 import { createBrowserRouter } from "react-router-dom";
 import MainLayout from "./component/layout/MainLayout";
-import DonorRegister from "./pages/DonorRegister";
-import DonorLogin from "./pages/DonorLogin";
-import PatientRegister from "./pages/PatientRegister";
-import PatientLogin from "./pages/PatientLogin";
-import AdminLogin from "./pages/AdminLogin";
 import DonorDashboard from "./pages/DonorDashboard";
 import AdminDashboard from "./pages/AdminDashboard";
 import BloodRequestForm from "./pages/BloodRequestForm";
@@ -14,15 +9,14 @@ import FindDonors from "./pages/FindDonors";
 import { Services } from "./pages/Services";
 import Contact from "./pages/Contact";
 import BloodCamps from "./pages/BloodCamps";
-import LoginOptions from "./pages/Login";
 import PatientDashboard from "./pages/PatientDashboard";
 import PatientRequests from "./component/Common/PatientRequests";
 import SinglePatientRequest from "./component/ui/SinglePatientRequest";
-import CompletedRequests from "./component/ui/CompletedRequests";
 import AllNotifications from "./component/ui/AllNotifications";
 import DonorNotifications from "./component/ui/DonorNotifications";
 import DonorMatchingRequests from "./component/ui/DonorMatchingRequests";
-import RegisterToggle from "./pages/RegisterationPage";
+import UserRegistration from "./pages/UserRegistration";
+import UserLogin from "./pages/UserLogin";
 
 const routes = createBrowserRouter([
   {
@@ -30,12 +24,6 @@ const routes = createBrowserRouter([
     element: <MainLayout />,
     children: [
       { path: "/", element: <Home /> },
-
-      // LOGIN ROUTES
-      { path: "login/donor", element: <DonorLogin /> },
-      { path: "login/patient", element: <PatientLogin /> },
-      { path: "login/admin", element: <AdminLogin /> },
-      { path: "login", element: <LoginOptions /> },
 
       // SIMPLE ROUTES
       { path: "donors", element: <FindDonors /> },
@@ -46,19 +34,12 @@ const routes = createBrowserRouter([
       // REGISTER ROUTES
       {
         path: "register",
-        element: <RegisterToggle />,
+        element: <UserRegistration />
       },
-
       {
-        path: "register/donor",
-        element: <DonorRegister />
+        path: "login",
+        element: <UserLogin />
       },
-
-      {
-        path: "register/patient",
-        element: <PatientRegister />
-      },
-
       // DASHBOARDS
       {
         path: "donor/dashboard",

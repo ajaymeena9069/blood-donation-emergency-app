@@ -9,7 +9,7 @@ import patientRoutes from "./routes/patientRoutes.js";
 import requestRoute from "./routes/requestRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
 import notificationRoutes from "./routes/notification.routes.js";
-
+import userRoutes from "./routes/userRoutes.js";
 connectDb();
 
 const app = express();
@@ -24,6 +24,7 @@ app.use(
 );
 
 // routes...
+app.use('/api/auth', userRoutes);
 app.use('/api/donor', donorRoutes);
 app.use('/api/patient', patientRoutes);
 app.use('/api/request', requestRoute);

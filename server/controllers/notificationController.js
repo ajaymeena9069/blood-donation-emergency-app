@@ -48,21 +48,6 @@ export const getNotifications = async (req, res) => {
   }
 };
 
-// ---------------- GET DONOR NOTIFICATIONS SEPARATELY (Optional) ----------------
-export const getDonorNotifications = async (req, res) => {
-  try {
-    const { donorId } = req.params;
-    const notifications = await Notification.find({ donorId }).sort({
-      createdAt: -1,
-    });
-
-    res.json({ success: true, notifications });
-  } catch (error) {
-    console.log("Donor Notif Error:", error);
-    res.status(500).json({ success: false, message: "Server Error" });
-  }
-};
-
 // ---------------- MARK SINGLE READ ----------------
 export const markAsRead = async (req, res) => {
   try {

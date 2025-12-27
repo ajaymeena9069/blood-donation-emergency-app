@@ -22,7 +22,7 @@ export default function FindDonor() {
   const [onlyAvailable, setOnlyAvailable] = useState(false);
 
   const { data, isLoading } = useGetAllDonorsQuery();
-  const { isAuthenticated, user } = useSelector((state) => state.auth);
+  const { isAuthenticated } = useSelector((state) => state.auth);
 
   // Normalize API response
   const donors = useMemo(() => {

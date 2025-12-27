@@ -36,6 +36,21 @@ export const bloodApi = createApi({
             }),
         }),
 
+        registerUser: builder.mutation({
+            query: (data) => ({
+                url: '/auth/register',
+                method: 'POST',
+                body: data
+            })
+        }),
+
+        loginUser: builder.mutation({
+            query: (data) => ({
+                url: "/auth/login",
+                method: "POST",
+                body: data
+            })
+        }),
         /* ------------------------------------------------------------------
             PATIENT REQUESTS
         ------------------------------------------------------------------ */
@@ -207,7 +222,8 @@ export const {
     useCreateRequestMutation,
     useGetPatientRequestsQuery,
     useGetSingleRequestQuery,
-
+    useRegisterUserMutation,
+    useLoginUserMutation,
     // Donor
     useRegisterDonorMutation,
     useLoginDonorMutation,

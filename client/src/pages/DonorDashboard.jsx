@@ -47,7 +47,6 @@ export default function DonorDashboard() {
   };
 
   const lastDonation = findLastDonation();
-  console.log(lastDonation);
   
   // ---------------------------
   // STATUS COLORS MAP
@@ -115,7 +114,6 @@ export default function DonorDashboard() {
           <FaUserCircle className="text-5xl text-gray-700" />
         </div>
       </motion.div>
-
       {/* Stats Overview */}
       <motion.div
         className="grid grid-cols-1 md:grid-cols-4 gap-4"

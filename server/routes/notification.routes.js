@@ -5,7 +5,7 @@ import {
   markAsRead,
   markAllAsRead,
   deleteNotification,
-  getDonorNotifications,
+  // getDonorNotifications,
 } from "../controllers/notificationController.js";
 
 import { verifyToken } from "../middlewares/authMiddleware.js";
@@ -16,7 +16,7 @@ const router = Router();
 router.post("/", verifyToken, createNotification);
 
 // GET DONOR NOTIFICATIONS (keep above :userId)
-router.get("/donor/:donorId", verifyToken, getDonorNotifications);
+// router.get("/donor/:donorId", verifyToken, getDonorNotifications);
 
 // GET ALL (patient+donor)
 router.get("/:userId", verifyToken, getNotifications);
