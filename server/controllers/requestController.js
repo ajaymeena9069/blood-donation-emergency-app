@@ -16,9 +16,9 @@ export const createRequest = async (req, res) => {
             city,
             hospitalName,
             emergency,
-            donorResponses: [],    // auto
-            acceptedBy: null,      // auto
-            status: "pending",     // auto
+            donorResponses: [],  
+            acceptedBy: null, 
+            status: "pending",
         });
 
         res.status(201).json({
