@@ -93,14 +93,14 @@ export const loginUser = async (req, res) => {
 
 export const activateRole = async (req, res) => {
     try {
-        const { roleToActivate } = req.body;
+        const { userId, roleToActivate } = req.body;
         const allowedRoles = ["donor", "patient"];
 
         if (!allowedRoles.includes(roleToActivate)) {
             return res.status(400).json({ success: false, message: "Invalid role type" });
         }
 
-        const user = await User.findById(req.user.id);
+        const user = await User.findById(userId);
         if (!user) {
             return res.status(404).json({ success: false, message: "User not found" });
         }

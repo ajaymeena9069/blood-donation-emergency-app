@@ -13,7 +13,7 @@ export const bloodApi = createApi({
         },
     }),
 
-    tagTypes: ["Request", "Notifications", "DonorNotifications", "DonorMatches", "Donor"],
+    tagTypes: ["Request", "Notifications", "DonorNotifications", "DonorMatches", "Donor", "Donors"],
 
     endpoints: (builder) => ({
 
@@ -41,7 +41,8 @@ export const bloodApi = createApi({
                 url: '/auth/register',
                 method: 'POST',
                 body: data
-            })
+            }),
+            invalidatesTags: ['Donors']
         }),
 
         loginUser: builder.mutation({
@@ -49,7 +50,8 @@ export const bloodApi = createApi({
                 url: "/auth/login",
                 method: "POST",
                 body: data
-            })
+            }),
+            invalidatesTags: ['Donors']
         }),
         /* ------------------------------------------------------------------
             PATIENT REQUESTS
@@ -94,6 +96,7 @@ export const bloodApi = createApi({
 
         getAllDonors: builder.query({
             query: () => "/donor/all",
+            providesTags: ["Donors"]
         }),
 
         updateAvailability: builder.mutation({

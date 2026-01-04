@@ -8,7 +8,10 @@ import {
   FaCalendarAlt,
   FaHistory,
   FaClock,
-  FaHeartbeat
+  FaHeartbeat,
+  FaExchangeAlt,
+  FaUserInjured,
+  FaUserShield
 } from "react-icons/fa";
 import { NavLink } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -34,6 +37,16 @@ export default function DonorDashboard() {
   const unreadNotificationCount = notifications.filter(n => !n.isRead).length;
   const recentMatches = matches.slice(0, 3);
   
+  // Mock data for role switching (this will come from backend later)
+  const availableRoles = [
+    { id: "donor", name: "Donor", icon: <FaHandHoldingHeart />, color: "text-red-600", bgColor: "bg-red-50", borderColor: "border-red-200" },
+    { id: "patient", name: "Patient", icon: <FaUserInjured />, color: "text-blue-600", bgColor: "bg-blue-50", borderColor: "border-blue-200" },
+    { id: "admin", name: "Admin", icon: <FaUserShield />, color: "text-gray-800", bgColor: "bg-gray-100", borderColor: "border-gray-300" }
+  ];
+
+  const currentRole = "donor"; // This will come from Redux/backend
+  const userHasMultipleRoles = true; // This will come from backend
+
   // Find last donation
   const findLastDonation = () => {
     const completedDonations = matches
@@ -90,11 +103,17 @@ export default function DonorDashboard() {
     });
   };
 
+  // Role switch handler (placeholder for now)
+  const handleRoleSwitch = (roleId) => {
+    console.log(`Switching to ${roleId} role`);
+    // This will be implemented later with API call
+  };
+
   return (
     <div className="max-w-6xl mx-auto px-4 py-8 space-y-8 animate-fadeIn">
-      {/* Header */}
+      {/* Header with Role Switcher */}
       <motion.div
-        className="flex justify-between items-center"
+        className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4"
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
       >
@@ -102,23 +121,118 @@ export default function DonorDashboard() {
           <h1 className="text-3xl font-bold text-gray-800">Donor Dashboard</h1>
           <p className="text-gray-600 mt-1">Welcome back, {user?.name || "Donor"}! Ready to save lives.</p>
         </div>
-        <div className="flex items-center gap-3">
-          {unreadNotificationCount > 0 && (
-            <div className="relative">
-              <FaBell className="text-2xl text-red-500" />
-              <span className="absolute -top-2 -right-2 bg-red-600 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
-                {unreadNotificationCount}
-              </span>
+        
+        <div className="flex items-center gap-4">
+          {/* Role Switcher */}
+          {userHasMultipleRoles && (
+            <div className="relative group">
+              <button className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-red-50 to-red-100 border border-red-200 rounded-xl hover:shadow-md transition-all">
+                <FaExchangeAlt className="text-red-600" />
+                <span className="font-medium text-gray-800">Switch Role</span>
+                <span className="text-red-600">▼</span>
+              </button>
+              
+              {/* Role Dropdown */}
+              <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-lg border border-gray-200 py-2 z-50 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
+                <div className="px-4 py-2 border-b border-gray-100">
+                  <p className="text-sm font-semibold text-gray-700">Switch to another role</p>
+                  <p className="text-xs text-gray-500">You have access to multiple roles</p>
+                </div>
+                
+                <div className="py-2">
+                  {availableRoles.map((role) => (
+                    <button
+                      key={role.id}
+                      onClick={() => handleRoleSwitch(role.id)}
+                      disabled={role.id === currentRole}
+                      className={`w-full px-4 py-3 flex items-center gap-3 hover:bg-gray-50 transition-colors ${role.id === currentRole ? 'opacity-60 cursor-not-allowed' : ''}`}
+                    >
+                      <div className={`p-2 rounded-lg ${role.bgColor} ${role.borderColor} border`}>
+                        <span className={role.color}>{role.icon}</span>
+                      </div>
+                      <div className="text-left">
+                        <p className="font-medium text-gray-800">{role.name}</p>
+                        <p className="text-xs text-gray-500">
+                          {role.id === currentRole ? 'Current Role' : 'Click to switch'}
+                        </p>
+                      </div>
+                      {role.id === currentRole && (
+                        <div className="ml-auto">
+                          <div className="h-2 w-2 bg-green-500 rounded-full"></div>
+                        </div>
+                      )}
+                    </button>
+                  ))}
+                </div>
+                
+                <div className="px-4 py-3 border-t border-gray-100 bg-gray-50 rounded-b-xl">
+                  <p className="text-xs text-gray-600">
+                    Need another role? <button className="text-red-600 font-medium hover:text-red-700">Request access</button>
+                  </p>
+                </div>
+              </div>
             </div>
           )}
-          <FaUserCircle className="text-5xl text-gray-700" />
+
+          <div className="flex items-center gap-3">
+            {unreadNotificationCount > 0 && (
+              <div className="relative">
+                <FaBell className="text-2xl text-red-500" />
+                <span className="absolute -top-2 -right-2 bg-red-600 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+                  {unreadNotificationCount}
+                </span>
+              </div>
+            )}
+            <FaUserCircle className="text-5xl text-gray-700" />
+          </div>
         </div>
       </motion.div>
+
+      {/* Current Role Indicator */}
+      {userHasMultipleRoles && (
+        <motion.div
+          className="bg-gradient-to-r from-red-50 to-pink-50 border border-red-200 rounded-2xl p-4"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.1 }}
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-3 bg-white rounded-xl border border-red-200">
+                <FaHandHoldingHeart className="text-2xl text-red-600" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-gray-600">Currently viewing as</p>
+                <p className="text-xl font-bold text-red-700">Donor Dashboard</p>
+                <p className="text-sm text-gray-500 mt-1">
+                  You can switch to other roles using the switcher above
+                </p>
+              </div>
+            </div>
+            <div className="hidden md:block">
+              <div className="flex items-center gap-2">
+                <div className="flex space-x-1">
+                  {availableRoles.map((role) => (
+                    <div
+                      key={role.id}
+                      className={`w-3 h-3 rounded-full ${role.id === currentRole ? role.color.replace('text-', 'bg-') : 'bg-gray-300'}`}
+                      title={role.name}
+                    ></div>
+                  ))}
+                </div>
+                <span className="text-sm text-gray-600">{availableRoles.length} roles available</span>
+              </div>
+            </div>
+          </div>
+        </motion.div>
+      )}
+
       {/* Stats Overview */}
       <motion.div
         className="grid grid-cols-1 md:grid-cols-4 gap-4"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
+        transition={{ delay: 0.2 }}
       >
         <NavLink to="/donor/matching-requests">
           <div className="bg-white p-5 rounded-xl shadow-md border border-gray-200 hover:shadow-lg hover:border-red-200 transition-all">
@@ -178,7 +292,7 @@ export default function DonorDashboard() {
           className="lg:col-span-2 bg-white rounded-2xl shadow-lg p-6"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
+          transition={{ delay: 0.3 }}
         >
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-xl font-bold text-gray-800">Recent Matching Requests</h2>
@@ -240,7 +354,7 @@ export default function DonorDashboard() {
           className="bg-white rounded-2xl shadow-lg p-6"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
+          transition={{ delay: 0.4 }}
         >
           <h2 className="text-xl font-bold text-gray-800 mb-6">Your Donation Summary</h2>
           
@@ -288,6 +402,34 @@ export default function DonorDashboard() {
             </div>
           </div>
 
+          {/* Role Quick Info */}
+          {userHasMultipleRoles && (
+            <div className="mb-6 p-4 bg-gradient-to-r from-gray-50 to-gray-100 border border-gray-200 rounded-xl">
+              <div className="flex items-center gap-2 mb-3">
+                <FaExchangeAlt className="text-gray-700" />
+                <h3 className="font-semibold text-gray-700">Role Access</h3>
+              </div>
+              <div className="space-y-2">
+                {availableRoles.map((role) => (
+                  <div 
+                    key={role.id} 
+                    className={`flex items-center justify-between p-2 rounded-lg ${role.id === currentRole ? role.bgColor + ' border ' + role.borderColor : 'bg-white'}`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className={role.color}>{role.icon}</span>
+                      <span className="text-sm font-medium">{role.name}</span>
+                    </div>
+                    {role.id === currentRole ? (
+                      <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">Active</span>
+                    ) : (
+                      <span className="text-xs text-gray-500">Available</span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Quick Links */}
           <div>
             <h3 className="font-semibold text-gray-700 mb-3">Quick Actions</h3>
@@ -324,7 +466,7 @@ export default function DonorDashboard() {
         className="bg-white rounded-2xl shadow-lg p-6"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ delay: 0.3 }}
+        transition={{ delay: 0.5 }}
       >
         <div className="flex justify-between items-center mb-6">
           <div className="flex items-center gap-2">

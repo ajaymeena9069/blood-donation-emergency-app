@@ -8,7 +8,7 @@ import Home from "./pages/Home";
 import FindDonors from "./pages/FindDonors";
 import { Services } from "./pages/Services";
 import Contact from "./pages/Contact";
-import BloodCamps from "./pages/BloodCamps";
+import BloodCare from "./pages/BloodCamps";
 import PatientDashboard from "./pages/PatientDashboard";
 import PatientRequests from "./component/Common/PatientRequests";
 import SinglePatientRequest from "./component/ui/SinglePatientRequest";
@@ -17,6 +17,7 @@ import DonorNotifications from "./component/ui/DonorNotifications";
 import DonorMatchingRequests from "./component/ui/DonorMatchingRequests";
 import UserRegistration from "./pages/UserRegistration";
 import UserLogin from "./pages/UserLogin";
+import UserProfile from "./pages/UserProfile";
 
 const routes = createBrowserRouter([
   {
@@ -29,8 +30,8 @@ const routes = createBrowserRouter([
       { path: "donors", element: <FindDonors /> },
       { path: "services", element: <Services /> },
       { path: "contact", element: <Contact /> },
-      { path: "camps", element: <BloodCamps /> },
-
+      { path: "care", element: <BloodCare /> },
+      { path: "profile", element: <UserProfile /> },
       // REGISTER ROUTES
       {
         path: "register",
