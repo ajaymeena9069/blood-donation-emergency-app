@@ -13,28 +13,13 @@ export const bloodApi = createApi({
         },
     }),
 
-    tagTypes: ["Request", "Notifications", "DonorNotifications", "DonorMatches", "Donor", "Donors"],
+    tagTypes: ["Request", "Notifications", "DonorNotifications", "DonorMatches", "Donor", "Donors", "profile"],
 
     endpoints: (builder) => ({
 
         /* ------------------------------------------------------------------
-            PATIENT AUTH
+            USER AUTH
         ------------------------------------------------------------------ */
-        registerPatient: builder.mutation({
-            query: (data) => ({
-                url: "/patient/register",
-                method: "POST",
-                body: data,
-            }),
-        }),
-
-        loginPatient: builder.mutation({
-            query: (data) => ({
-                url: "/patient/login",
-                method: "POST",
-                body: data,
-            }),
-        }),
 
         registerUser: builder.mutation({
             query: (data) => ({
@@ -53,6 +38,24 @@ export const bloodApi = createApi({
             }),
             invalidatesTags: ['Donors']
         }),
+
+        getProfile: builder.query({
+            query: () => ({
+                url: 'user/profile',
+                method: 'GET'
+            }),
+            providesTags: ['Profile'],
+        }),
+
+        updateUser: builder.mutation({
+            query: (data) => ({
+                url: 'user/profile',
+                method: 'PUT',
+                body: data,
+            }),
+            invalidatesTags: ['Profile'],
+        }),
+
         /* ------------------------------------------------------------------
             PATIENT REQUESTS
         ------------------------------------------------------------------ */
@@ -227,6 +230,8 @@ export const {
     useGetSingleRequestQuery,
     useRegisterUserMutation,
     useLoginUserMutation,
+    useGetProfileQuery,
+    useUpdateUserMutation,
     // Donor
     useRegisterDonorMutation,
     useLoginDonorMutation,
