@@ -1,52 +1,47 @@
 /* eslint-disable no-unused-vars */
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { motion } from "framer-motion";
 import { FaTint, FaEnvelope, FaLock, FaEye, FaEyeSlash } from "react-icons/fa";
 import { useLoginUserMutation } from "../features/api/bloodApi";
-import FlashMessage, { getMessage } from "../component/FlashMessage";
+import FlashMessage from "../component/FlashMessage";
 import { useDispatch } from "react-redux";
 import { setCredentials } from "../features/auth/authSlice";
+import { loginSchema } from "../../../common/validators/user.validator.js";
 
 export default function UserLogin() {
     const navigate = useNavigate();
     const dispatch = useDispatch();
 
-    const [formData, setFormData] = useState({
-        email: "",
-        password: "",
-    });
-
     const [flash, setFlash] = useState({ type: "", message: "" });
     const [showPassword, setShowPassword] = useState(false);
     const [loginUser, { isLoading }] = useLoginUserMutation();
 
-    const handleChange = (e) => {
-        const { name, value } = e.target;
-        setFormData(prev => ({
-            ...prev,
-            [name]: value
-        }));
-    };
-
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        if (!formData.email || !formData.password) {
-            setFlash({ type: "error", message: "Please fill in all fields" });
-            return;
+    const {
+        register,
+        handleSubmit,
+        formState: { errors }
+    } = useForm({
+        resolver: zodResolver(loginSchema),
+        defaultValues: {
+            email: "",
+            password: "",
         }
+    });
 
+    const onSubmit = async (formData) => {
         try {
             const res = await loginUser(formData).unwrap();
             let userRole = null;
-            
+
             if (res.user && res.user.role) {
                 userRole = Array.isArray(res.user.role) ? res.user.role[0] : res.user.role;
             } else if (res.role) {
                 userRole = Array.isArray(res.role) ? res.role[0] : res.role;
             }
-            
-            
+
             dispatch(setCredentials({
                 token: res.token,
                 role: userRole,
@@ -63,16 +58,23 @@ export default function UserLogin() {
                 } else if (userRole === "admin") {
                     navigate("/admin/dashboard");
                 } else {
-                    console.warn("No valid role found, navigating to /dashboard");
-                    navigate("/dashboard"); // Default fallback
+                    navigate("/dashboard");
                 }
             }, 500);
 
         } catch (error) {
             console.error("Login error:", error);
+            let errorMessage = "Invalid credentials";
+
+            if (error?.data?.errors) {
+                errorMessage = error.data.errors[0].message;
+            } else if (error?.data?.message) {
+                errorMessage = error.data.message;
+            }
+
             setFlash({
                 type: "error",
-                message: error?.data?.message || "Invalid credentials"
+                message: errorMessage
             });
         }
     };
@@ -81,7 +83,6 @@ export default function UserLogin() {
 
     return (
         <div className="min-h-screen bg-gray-50 py-8 px-4">
-            {/* Flash Message Component */}
             <FlashMessage
                 type={flash.type}
                 message={flash.message}
@@ -89,8 +90,6 @@ export default function UserLogin() {
             />
 
             <div className="max-w-md mx-auto">
-
-                {/* Header */}
                 <div className="text-center mb-8">
                     <div className="mb-4">
                         <div className="inline-flex items-center gap-2 p-3 bg-red-50 rounded-full">
@@ -101,9 +100,8 @@ export default function UserLogin() {
                     <p className="text-gray-600 text-sm mt-1">Sign in to your account</p>
                 </div>
 
-                {/* Login Card */}
                 <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                    <form onSubmit={handleSubmit} className="space-y-4">
+                    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
 
                         {/* Email */}
                         <div>
@@ -111,15 +109,13 @@ export default function UserLogin() {
                             <div className="relative">
                                 <FaEnvelope className="absolute left-3 top-3 text-gray-400 text-sm" />
                                 <input
-                                    name="email"
+                                    {...register("email")}
                                     type="email"
                                     placeholder="you@example.com"
-                                    className={inputClass}
-                                    value={formData.email}
-                                    onChange={handleChange}
-                                    required
+                                    className={`${inputClass} ${errors.email ? 'border-red-500' : ''}`}
                                 />
                             </div>
+                            {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email.message}</p>}
                         </div>
 
                         {/* Password */}
@@ -128,13 +124,10 @@ export default function UserLogin() {
                             <div className="relative">
                                 <FaLock className="absolute left-3 top-3 text-gray-400 text-sm" />
                                 <input
-                                    name="password"
+                                    {...register("password")}
                                     type={showPassword ? "text" : "password"}
                                     placeholder="Enter your password"
-                                    className={inputClass}
-                                    value={formData.password}
-                                    onChange={handleChange}
-                                    required
+                                    className={`${inputClass} ${errors.password ? 'border-red-500' : ''}`}
                                 />
                                 <button
                                     type="button"
@@ -144,9 +137,9 @@ export default function UserLogin() {
                                     {showPassword ? <FaEyeSlash className="text-sm" /> : <FaEye className="text-sm" />}
                                 </button>
                             </div>
+                            {errors.password && <p className="text-red-500 text-xs mt-1">{errors.password.message}</p>}
                         </div>
 
-                        {/* Forgot Password */}
                         <div className="text-right">
                             <button
                                 type="button"
@@ -157,7 +150,6 @@ export default function UserLogin() {
                             </button>
                         </div>
 
-                        {/* Submit Button */}
                         <motion.button
                             whileHover={{ scale: 1.01 }}
                             whileTap={{ scale: 0.99 }}
@@ -176,7 +168,6 @@ export default function UserLogin() {
                         </motion.button>
                     </form>
 
-                    {/* Divider */}
                     <div className="my-6">
                         <div className="flex items-center">
                             <div className="flex-1 h-px bg-gray-300"></div>
@@ -185,7 +176,6 @@ export default function UserLogin() {
                         </div>
                     </div>
 
-                    {/* Register Link */}
                     <div className="text-center">
                         <p className="text-gray-600 text-sm">
                             Don't have an account?{" "}
@@ -199,7 +189,6 @@ export default function UserLogin() {
                     </div>
                 </div>
 
-                {/* Security Note */}
                 <div className="mt-6 text-center">
                     <p className="text-xs text-gray-500">
                         🔒 Your login information is securely encrypted
