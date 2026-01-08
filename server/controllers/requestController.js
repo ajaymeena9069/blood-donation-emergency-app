@@ -1,6 +1,5 @@
 import Request from "../models/requestModel.js";
-import Donor from "../models/donorModel.js";
-import Patient from "../models/patientModel.js";
+import User from "../models/userModel.js";
 
 // ------------------------------------------------------
 // 🔹 Create Blood Request  (Patient)
@@ -75,9 +74,9 @@ export const getDonorMatches = async (req, res) => {
 // ------------------------------------------------------
 export const getMatchedRequests = async (req, res) => {
     try {
-        const donorId = req.user.id; // from verifyToken middleware
+        const donorId = req.user.id;
 
-        const donor = await Donor.findById(donorId);
+        const donor = await User.findById(donorId);
         if (!donor) {
             return res.status(404).json({
                 success: false,
@@ -87,9 +86,6 @@ export const getMatchedRequests = async (req, res) => {
 
         const donorCity = donor.city.trim().toLowerCase();
         const donorBlood = donor.bloodGroup;
-
-        // Find pending requests matching donor's blood & city
-        // Also include requests already accepted by this donor
         const requests = await Request.find({
             $or: [
                 {

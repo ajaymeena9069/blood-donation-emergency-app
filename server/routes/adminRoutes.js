@@ -1,6 +1,6 @@
 import express from "express";
 import { getAllRequests, loginAdmin, updateRequestStatus } from "../controllers/adminController.js";
-import { verifyToken } from "../middlewares/authMiddleware.js";
+import { verifyToken } from "../middlewares/auth.js";
 const router = express.Router();
 
 router.post("/login", loginAdmin);

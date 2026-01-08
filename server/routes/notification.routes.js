@@ -8,7 +8,7 @@ import {
   // getDonorNotifications,
 } from "../controllers/notificationController.js";
 
-import { verifyToken } from "../middlewares/authMiddleware.js";
+import { verifyToken } from "../middlewares/auth.js";
 
 const router = Router();
 

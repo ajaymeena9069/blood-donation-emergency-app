@@ -5,16 +5,16 @@ const notificationSchema = new mongoose.Schema(
     title: { type: String, required: true },
     message: { type: String, required: true },
 
-    // 🔥 Separate receivers (one of them must be filled)
+    // 🔥 Separate receivers (Both point to "User" now)
     patientId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Patient",
+      ref: "User",
       default: null,
     },
 
     donorId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Donor",
+      ref: "User",
       default: null,
     },
 

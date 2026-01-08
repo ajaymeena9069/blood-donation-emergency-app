@@ -1,8 +1,8 @@
-// models/requestModel.js
 import mongoose from "mongoose";
 
 const donorResponseSchema = new mongoose.Schema({
-  donorId: { type: mongoose.Schema.Types.ObjectId, ref: "Donor", required: true },
+  // Ref changed to "User"
+  donorId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
   status: {
     type: String,
     enum: ["pending", "accepted", "cancel"],
@@ -12,9 +12,10 @@ const donorResponseSchema = new mongoose.Schema({
 
 const requestSchema = new mongoose.Schema(
   {
+    // Ref changed to "User"
     patientId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Patient",
+      ref: "User",
       required: true,
     },
 
@@ -25,9 +26,10 @@ const requestSchema = new mongoose.Schema(
 
     emergency: { type: Boolean, default: false },
 
+    // Ref changed to "User"
     acceptedBy: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Donor",
+      ref: "User",
       default: null,
     },
 
