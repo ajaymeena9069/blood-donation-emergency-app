@@ -11,9 +11,9 @@ import {
 } from "../../features/api/bloodApi";
 import { useNavigate } from "react-router-dom";
 
-export default function AllNotifications() {
+export default function Notifications() {
     const { user } = useSelector((state) => state.auth);
-    const [filter, setFilter] = useState("all"); 
+    const [filter, setFilter] = useState("all");
 
     const { data, isLoading, refetch } = useGetNotificationsQuery(user?.id, {
         refetchOnMountOrArgChange: true,
@@ -155,15 +155,15 @@ export default function AllNotifications() {
                             key={item.key}
                             onClick={() => setFilter(item.key)}
                             className={`px-4 py-2 rounded-lg transition-all font-medium ${filter === item.key
-                                    ? "bg-red-600 text-white shadow-sm"
-                                    : "bg-white text-gray-700 hover:bg-gray-100 shadow-sm"
+                                ? "bg-red-600 text-white shadow-sm"
+                                : "bg-white text-gray-700 hover:bg-gray-100 shadow-sm"
                                 }`}
                         >
                             {item.label}
                             {item.count > 0 && (
                                 <span className={`ml-2 px-1.5 py-0.5 text-xs rounded-full ${filter === item.key
-                                        ? "bg-white/20"
-                                        : "bg-gray-200 text-gray-700"
+                                    ? "bg-white/20"
+                                    : "bg-gray-200 text-gray-700"
                                     }`}>
                                     {item.count}
                                 </span>
@@ -221,8 +221,8 @@ export default function AllNotifications() {
                                         <div className="flex gap-4">
                                             {/* ICON */}
                                             <div className={`p-3 rounded-xl ${notification.read
-                                                    ? "bg-gray-100 text-gray-600"
-                                                    : "bg-red-100 text-red-600"
+                                                ? "bg-gray-100 text-gray-600"
+                                                : "bg-red-100 text-red-600"
                                                 }`}>
                                                 {notification.read ? (
                                                     <FaEnvelopeOpen className="text-lg" />

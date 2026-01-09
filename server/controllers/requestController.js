@@ -15,8 +15,8 @@ export const createRequest = async (req, res) => {
             city,
             hospitalName,
             emergency,
-            donorResponses: [],  
-            acceptedBy: null, 
+            donorResponses: [],
+            acceptedBy: null,
             status: "pending",
         });
 
@@ -87,15 +87,24 @@ export const getMatchedRequests = async (req, res) => {
         const donorCity = donor.city.trim().toLowerCase();
         const donorBlood = donor.bloodGroup;
         const requests = await Request.find({
-            $or: [
+            $and: [
                 {
-                    status: "pending",
-                    bloodGroup: donorBlood,
-                    city: { $regex: new RegExp("^" + donorCity + "$", "i") },
+                    $or: [
+                        {
+                            status: "pending",
+                            bloodGroup: donorBlood,
+                            city: { $regex: new RegExp("^" + donorCity + "$", "i") },
+                        },
+                        { acceptedBy: donorId }
+                    ]
                 },
-                { acceptedBy: donorId } // include requests accepted by this donor
-            ],
-        }).populate("patientId", "name email phone");
+                {
+                    patientId: { $ne: donorId }
+                }
+            ]
+        })
+            .populate("patientId", "name email phone")
+            .sort({ createdAt: -1 }); // Sort by newest first
 
         return res.status(200).json({
             success: true,

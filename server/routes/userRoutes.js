@@ -1,3 +1,4 @@
+// routes/userRoutes.js
 import express from "express";
 import {
     getProfile,
@@ -12,8 +13,11 @@ import {
 } from "../../common/validators/user.validator.js";
 
 const router = express.Router();
+
+// All routes are protected
 router.use(verifyToken);
 
+// User profile routes
 router.get("/profile", getProfile);
 router.put("/profile", validate(updateProfileSchema), updateProfile);
 router.post("/activate-role", validate(activateRoleSchema), activateRole);

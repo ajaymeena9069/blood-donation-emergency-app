@@ -124,12 +124,28 @@ export const loginUser = async (req, res) => {
     }
 };
 
+// controllers/userController.js
+
 export const activateRole = async (req, res) => {
     try {
         const { roleToActivate } = req.body;
-        const userId = req.user.id; 
+        const userId = req.user.id; // From verifyToken middleware
+
+        console.log("🔍 Activating role for user:", userId);
+        console.log("🔍 Role to activate:", roleToActivate);
+        console.log("🔍 User from token:", req.user);
+
+        // Validate role
+        const validRoles = ["donor", "patient", "admin"];
+        if (!validRoles.includes(roleToActivate)) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid role specified"
+            });
+        }
 
         const user = await User.findById(userId);
+
         if (!user) {
             return res.status(404).json({
                 success: false,
@@ -137,32 +153,68 @@ export const activateRole = async (req, res) => {
             });
         }
 
+        // Check if user already has this role
         if (user.role.includes(roleToActivate)) {
-            return res.status(400).json({
-                success: false,
-                message: `You are already a ${roleToActivate}`
+            return res.status(200).json({
+                success: true,
+                message: `Role ${roleToActivate} is already active`,
+                data: {
+                    roles: user.role,
+                    token: req.headers.authorization?.split(' ')[1]
+                }
             });
         }
 
+        // Add new role
         user.role.push(roleToActivate);
 
+        // If activating donor role, set available to true
         if (roleToActivate === "donor") {
             user.available = true;
         }
 
         await user.save();
 
+        console.log("✅ Role added. User roles now:", user.role);
+
+        // Generate new JWT token with updated roles
+        const newToken = jwt.sign(
+            {
+                id: user._id,
+                email: user.email,
+                role: user.role
+            },
+            JWT_SECRET,
+            { expiresIn: "7d" }
+        );
+
         res.status(200).json({
             success: true,
             message: `${roleToActivate} role activated successfully!`,
-            roles: user.role
+            data: {
+                roles: user.role,
+                token: newToken,
+                user: {
+                    id: user._id,
+                    name: user.name,
+                    email: user.email,
+                    phone: user.phone,
+                    bloodGroup: user.bloodGroup,
+                    city: user.city,
+                    age: user.age,
+                    gender: user.gender,
+                    available: user.available,
+                    role: user.role
+                }
+            }
         });
+
     } catch (error) {
-        console.error("Activate role error:", error);
+        console.error("❌ Activate role error:", error);
         res.status(500).json({
             success: false,
-            message: "Server error",
-            error: process.env.NODE_ENV === 'development' ? error.message : undefined
+            message: "Server error while activating role",
+            error: error.message
         });
     }
 };

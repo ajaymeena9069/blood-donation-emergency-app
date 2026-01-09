@@ -1,529 +1,568 @@
 /* eslint-disable no-unused-vars */
-import React from "react";
-import {
-  FaUserCircle,
-  FaTint,
-  FaBell,
-  FaHandHoldingHeart,
-  FaCalendarAlt,
-  FaHistory,
-  FaClock,
-  FaHeartbeat,
-  FaExchangeAlt,
-  FaUserInjured,
-  FaUserShield
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { 
+  FaUserCircle, FaTint, FaBell, FaHandHoldingHeart, 
+  FaHistory, FaClock, FaExchangeAlt, FaArrowRight, 
+  FaCheckCircle, FaHeartbeat, FaCalendarAlt, FaUsers,
+  FaMapMarkerAlt, FaUserCheck, FaHospital
 } from "react-icons/fa";
-import { data, NavLink } from "react-router-dom";
+import { NavLink } from "react-router-dom";
 import { motion } from "framer-motion";
-import { useSelector } from "react-redux";
-import {
-  useGetDonorMatchesQuery,
-  useGetDonorNotificationsQuery,
-} from "../features/api/bloodApi";
+import { useSelector, useDispatch } from "react-redux";
+import { useGetDonorMatchesQuery, useGetNotificationsQuery, useActivateRoleMutation } from "../features/api/bloodApi";
+import { setCredentials } from "../features/auth/authSlice";
 
 export default function DonorDashboard() {
+  const navigate = useNavigate();
+  const dispatch = useDispatch();
   const { user } = useSelector((state) => state.auth);
 
-  const { data: matchesData, isLoading: matchesLoading } = useGetDonorMatchesQuery();
-  console.log(data);
-  
-  const { data: notificationsData, isLoading: notifLoading } = useGetDonorNotificationsQuery(user?.id, { skip: !user?.id });
+  const [flash, setFlash] = useState({ type: "", message: "" });
+  const [isSwitchingRole, setIsSwitchingRole] = useState(false);
+  const [showRoleDropdown, setShowRoleDropdown] = useState(false);
 
+  const { data: matchesData, isLoading: matchesLoading } = useGetDonorMatchesQuery();
+  const { data: notificationsData } = useGetNotificationsQuery(user?.id, { skip: !user?.id });
+
+  const [activateRole] = useActivateRoleMutation();
+
+  // Dashboard data
   const matches = matchesData?.data || [];
   const notifications = notificationsData?.data || [];
-
-  const totalMatches = matches.length;
-  const completedDonations = matches.filter((req) => req.status === "completed").length;
-  const pendingMatches = matches.filter((req) => req.status === "pending").length;
-  const acceptedMatches = matches.filter((req) => req.status === "accepted").length;
-  const unreadNotificationCount = notifications.filter(n => !n.isRead).length;
   const recentMatches = matches.slice(0, 3);
-  
-  // Mock data for role switching (this will come from backend later)
-  const availableRoles = [
-    { id: "donor", name: "Donor", icon: <FaHandHoldingHeart />, color: "text-red-600", bgColor: "bg-red-50", borderColor: "border-red-200" },
-    { id: "patient", name: "Patient", icon: <FaUserInjured />, color: "text-blue-600", bgColor: "bg-blue-50", borderColor: "border-blue-200" },
-    { id: "admin", name: "Admin", icon: <FaUserShield />, color: "text-gray-800", bgColor: "bg-gray-100", borderColor: "border-gray-300" }
-  ];
+  const lastDonation = matches.filter(req => req.status === "completed").sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt))[0] || null;
 
-  const currentRole = "donor"; // This will come from Redux/backend
-  const userHasMultipleRoles = true; // This will come from backend
-
-  // Find last donation
-  const findLastDonation = () => {
-    const completedDonations = matches
-      .filter(req => req.status === "completed")
-      .sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
-    
-    if (completedDonations.length > 0) {
-      return completedDonations[0];
-    }
-    return null;
+  // Stats
+  const stats = {
+    totalMatches: matches.length,
+    completedDonations: matches.filter(req => req.status === "completed").length,
+    pendingMatches: matches.filter(req => req.status === "pending").length,
+    unreadNotifications: notifications.filter(n => !n.isRead).length
   };
 
-  const lastDonation = findLastDonation();
-  
-  // ---------------------------
-  // STATUS COLORS MAP
-  // ---------------------------
-  const statusColors = {
-    pending: {
-      card: "border-yellow-500 bg-yellow-50",
-      badge: "bg-yellow-100 text-yellow-700",
+  // Role management
+  const userRoles = user?.role || [];
+  const currentRole = "donor";
+
+  const allRoles = [
+    { id: "donor", name: "Blood Donor", icon: "🩸", color: "from-red-500 to-red-600", bg: "bg-red-50", border: "border-red-200" },
+    { id: "patient", name: "Blood Recipient", icon: "🏥", color: "from-blue-500 to-blue-600", bg: "bg-blue-50", border: "border-blue-200" },
+    { id: "admin", name: "System Admin", icon: "👑", color: "from-gray-700 to-gray-800", bg: "bg-gray-50", border: "border-gray-200" }
+  ];
+
+  const userCurrentRoles = allRoles.filter(role => userRoles.includes(role.id));
+  const availableRoles = allRoles.filter(role => !userRoles.includes(role.id) && role.id !== currentRole);
+
+  // Status config
+  const statusConfig = {
+    pending: { 
+      bg: "bg-yellow-50", 
+      text: "text-yellow-800", 
+      border: "border-yellow-200",
+      badge: "bg-yellow-100 text-yellow-800 border-yellow-300",
       icon: "⏳"
     },
-    accepted: {
-      card: "border-blue-500 bg-blue-50",
-      badge: "bg-blue-100 text-blue-700",
+    accepted: { 
+      bg: "bg-blue-50", 
+      text: "text-blue-800", 
+      border: "border-blue-200",
+      badge: "bg-blue-100 text-blue-800 border-blue-300",
       icon: "✅"
     },
-    completed: {
-      card: "border-green-500 bg-green-50",
-      badge: "bg-green-100 text-green-700",
+    completed: { 
+      bg: "bg-green-50", 
+      text: "text-green-800", 
+      border: "border-green-200",
+      badge: "bg-green-100 text-green-800 border-green-300",
       icon: "🎉"
     },
-    cancel: {
-      card: "border-red-500 bg-red-50",
-      badge: "bg-red-100 text-red-700",
+    canceled: { 
+      bg: "bg-red-50", 
+      text: "text-red-800", 
+      border: "border-red-200",
+      badge: "bg-red-100 text-red-800 border-red-300",
       icon: "❌"
-    },
-    rejected: {
-      card: "border-red-500 bg-red-50",
-      badge: "bg-red-100 text-red-700",
-      icon: "🚫"
-    },
+    }
+  };
+
+  // Role switch handler
+  const handleRoleSwitch = async (roleId) => {
+    if (isSwitchingRole) return;
+
+    setIsSwitchingRole(true);
+    setShowRoleDropdown(false);
+    setFlash({ type: "info", message: `Activating ${roleId} role...` });
+
+    try {
+      const response = await activateRole({ roleToActivate: roleId }).unwrap();
+      if (response.success) {
+        if (response.data?.token) {
+          localStorage.setItem('token', response.data.token);
+          dispatch(setCredentials({
+            token: response.data.token,
+            user: response.data?.user || user
+          }));
+        }
+        setFlash({ type: "success", message: `✅ Role activated! Redirecting...` });
+        setTimeout(() => navigate(`/${roleId}/dashboard`), 1000);
+      } else {
+        throw new Error(response.message || "Activation failed");
+      }
+    } catch (error) {
+      console.error("Role switch error:", error);
+      setFlash({
+        type: "error",
+        message: `❌ ${error?.data?.message || error.message || "Failed to activate role"}`
+      });
+    } finally {
+      setIsSwitchingRole(false);
+    }
+  };
+
+  // Quick switch to existing role
+  const switchToExistingRole = (roleId) => {
+    if (roleId === currentRole) return;
+    setFlash({ type: "info", message: `Switching to ${roleId} dashboard...` });
+    setTimeout(() => navigate(`/${roleId}/dashboard`), 300);
+  };
+
+  // Flash message component
+  const FlashMessage = () => {
+    if (!flash.message) return null;
+
+    const colors = {
+      success: "bg-green-50 border-green-300",
+      error: "bg-red-50 border-red-300",
+      info: "bg-blue-50 border-blue-300"
+    };
+
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className={`fixed top-6 right-6 z-50 rounded-lg border p-4 shadow-lg max-w-md ${colors[flash.type]}`}
+      >
+        <div className="flex items-start">
+          <FaCheckCircle className={`mt-1 ${flash.type === 'success' ? 'text-green-600' : flash.type === 'error' ? 'text-red-600' : 'text-blue-600'}`} />
+          <div className="ml-3 flex-1">
+            <p className="font-medium capitalize text-gray-900">{flash.type}</p>
+            <p className="text-sm text-gray-700 mt-1">{flash.message}</p>
+          </div>
+          <button 
+            onClick={() => setFlash({ type: "", message: "" })} 
+            className="ml-4 text-gray-500 hover:text-gray-800"
+          >
+            ✕
+          </button>
+        </div>
+      </motion.div>
+    );
   };
 
   // Format date
   const formatDate = (date) => {
-    if (!date) return "N/A";
-    const d = new Date(date);
-    return d.toLocaleDateString('en-IN', {
+    return new Date(date).toLocaleDateString('en-IN', {
       day: 'numeric',
-      month: 'short',
-      year: 'numeric'
+      month: 'short'
     });
   };
 
-  // Role switch handler (placeholder for now)
-  const handleRoleSwitch = (roleId) => {
-    console.log(`Switching to ${roleId} role`);
-    // This will be implemented later with API call
-  };
-
   return (
-    <div className="max-w-6xl mx-auto px-4 py-8 space-y-8 animate-fadeIn">
-      {/* Header with Role Switcher */}
-      <motion.div
-        className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4"
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-      >
+    <div className="max-w-[1200px] mx-auto px-4 py-6">
+      <FlashMessage />
+
+      {/* Header */}
+      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-6">
         <div>
-          <h1 className="text-3xl font-bold text-gray-800">Donor Dashboard</h1>
-          <p className="text-gray-600 mt-1">Welcome back, {user?.name || "Donor"}! Ready to save lives.</p>
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-red-100 rounded-lg">
+              <FaTint className="text-xl text-red-600" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">Donor Dashboard</h1>
+              <p className="text-gray-600">Welcome back, {user?.name || "Donor"}!</p>
+            </div>
+          </div>
         </div>
-        
-        <div className="flex items-center gap-4">
-          {/* Role Switcher */}
-          {userHasMultipleRoles && (
-            <div className="relative group">
-              <button className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-red-50 to-red-100 border border-red-200 rounded-xl hover:shadow-md transition-all">
-                <FaExchangeAlt className="text-red-600" />
-                <span className="font-medium text-gray-800">Switch Role</span>
-                <span className="text-red-600">▼</span>
+
+        <div className="flex items-center gap-3">
+          {availableRoles.length > 0 && (
+            <div className="relative">
+              <button
+                onClick={() => setShowRoleDropdown(!showRoleDropdown)}
+                disabled={isSwitchingRole}
+                className="flex items-center gap-2 px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition text-sm"
+              >
+                {isSwitchingRole ? (
+                  <>
+                    <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    <span>Activating...</span>
+                  </>
+                ) : (
+                  <>
+                    <FaExchangeAlt />
+                    <span>Activate Role</span>
+                  </>
+                )}
               </button>
               
-              {/* Role Dropdown */}
-              <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-lg border border-gray-200 py-2 z-50 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
-                <div className="px-4 py-2 border-b border-gray-100">
-                  <p className="text-sm font-semibold text-gray-700">Switch to another role</p>
-                  <p className="text-xs text-gray-500">You have access to multiple roles</p>
-                </div>
-                
-                <div className="py-2">
-                  {availableRoles.map((role) => (
+              {showRoleDropdown && (
+                <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-lg border py-2 z-50">
+                  <p className="px-4 py-2 text-sm font-medium text-gray-700">Available Roles</p>
+                  {availableRoles.map(role => (
                     <button
                       key={role.id}
                       onClick={() => handleRoleSwitch(role.id)}
-                      disabled={role.id === currentRole}
-                      className={`w-full px-4 py-3 flex items-center gap-3 hover:bg-gray-50 transition-colors ${role.id === currentRole ? 'opacity-60 cursor-not-allowed' : ''}`}
+                      className="w-full px-4 py-3 flex items-center gap-3 hover:bg-gray-50 text-left text-sm"
                     >
-                      <div className={`p-2 rounded-lg ${role.bgColor} ${role.borderColor} border`}>
-                        <span className={role.color}>{role.icon}</span>
+                      <span className="text-lg">{role.icon}</span>
+                      <div>
+                        <p className="font-medium text-gray-900">{role.name}</p>
+                        <p className="text-xs text-gray-500">Click to activate</p>
                       </div>
-                      <div className="text-left">
-                        <p className="font-medium text-gray-800">{role.name}</p>
-                        <p className="text-xs text-gray-500">
-                          {role.id === currentRole ? 'Current Role' : 'Click to switch'}
-                        </p>
-                      </div>
-                      {role.id === currentRole && (
-                        <div className="ml-auto">
-                          <div className="h-2 w-2 bg-green-500 rounded-full"></div>
-                        </div>
-                      )}
                     </button>
                   ))}
                 </div>
-                
-                <div className="px-4 py-3 border-t border-gray-100 bg-gray-50 rounded-b-xl">
-                  <p className="text-xs text-gray-600">
-                    Need another role? <button className="text-red-600 font-medium hover:text-red-700">Request access</button>
-                  </p>
-                </div>
-              </div>
+              )}
             </div>
           )}
-
-          <div className="flex items-center gap-3">
-            {unreadNotificationCount > 0 && (
-              <div className="relative">
-                <FaBell className="text-2xl text-red-500" />
-                <span className="absolute -top-2 -right-2 bg-red-600 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
-                  {unreadNotificationCount}
+          
+          <div className="flex items-center gap-2">
+            <NavLink to="/notifications" className="relative">
+              <FaBell className="text-xl text-gray-600 hover:text-blue-600" />
+              {stats.unreadNotifications > 0 && (
+                <span className="absolute -top-2 -right-2 bg-red-600 text-white text-xs h-5 w-5 rounded-full flex items-center justify-center">
+                  {stats.unreadNotifications}
                 </span>
-              </div>
-            )}
-            <FaUserCircle className="text-5xl text-gray-700" />
-          </div>
-        </div>
-      </motion.div>
-
-      {/* Current Role Indicator */}
-      {userHasMultipleRoles && (
-        <motion.div
-          className="bg-gradient-to-r from-red-50 to-pink-50 border border-red-200 rounded-2xl p-4"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.1 }}
-        >
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="p-3 bg-white rounded-xl border border-red-200">
-                <FaHandHoldingHeart className="text-2xl text-red-600" />
-              </div>
-              <div>
-                <p className="text-sm font-medium text-gray-600">Currently viewing as</p>
-                <p className="text-xl font-bold text-red-700">Donor Dashboard</p>
-                <p className="text-sm text-gray-500 mt-1">
-                  You can switch to other roles using the switcher above
-                </p>
-              </div>
-            </div>
-            <div className="hidden md:block">
-              <div className="flex items-center gap-2">
-                <div className="flex space-x-1">
-                  {availableRoles.map((role) => (
-                    <div
-                      key={role.id}
-                      className={`w-3 h-3 rounded-full ${role.id === currentRole ? role.color.replace('text-', 'bg-') : 'bg-gray-300'}`}
-                      title={role.name}
-                    ></div>
-                  ))}
-                </div>
-                <span className="text-sm text-gray-600">{availableRoles.length} roles available</span>
-              </div>
-            </div>
-          </div>
-        </motion.div>
-      )}
-
-      {/* Stats Overview */}
-      <motion.div
-        className="grid grid-cols-1 md:grid-cols-4 gap-4"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.2 }}
-      >
-        <NavLink to="/donor/matching-requests">
-          <div className="bg-white p-5 rounded-xl shadow-md border border-gray-200 hover:shadow-lg hover:border-red-200 transition-all">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-gray-600 text-sm">Total Matches</p>
-                <p className="text-2xl font-bold text-gray-800 mt-1">{matchesLoading ? "..." : totalMatches}</p>
-              </div>
-              <FaTint className="text-3xl text-red-500 opacity-80" />
-            </div>
-            <p className="text-xs text-gray-500 mt-3">Click to view all</p>
-          </div>
-        </NavLink>
-
-        <NavLink to="/donor/history">
-          <div className="bg-white p-5 rounded-xl shadow-md border border-gray-200 hover:shadow-lg hover:border-green-200 transition-all">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-gray-600 text-sm">Completed</p>
-                <p className="text-2xl font-bold text-green-600 mt-1">{matchesLoading ? "..." : completedDonations}</p>
-              </div>
-              <FaHandHoldingHeart className="text-3xl text-green-500 opacity-80" />
-            </div>
-            <p className="text-xs text-gray-500 mt-3">Successful donations</p>
-          </div>
-        </NavLink>
-
-        <div className="bg-white p-5 rounded-xl shadow-md border border-gray-200">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-gray-600 text-sm">Pending</p>
-              <p className="text-2xl font-bold text-yellow-600 mt-1">{matchesLoading ? "..." : pendingMatches}</p>
-            </div>
-            <FaClock className="text-3xl text-yellow-500 opacity-80" />
-          </div>
-          <p className="text-xs text-gray-500 mt-3">Awaiting your response</p>
-        </div>
-
-        <NavLink to="/donor/notifications">
-          <div className="bg-white p-5 rounded-xl shadow-md border border-gray-200 hover:shadow-lg hover:border-blue-200 transition-all">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-gray-600 text-sm">Unread</p>
-                <p className="text-2xl font-bold text-blue-600 mt-1">{notifLoading ? "..." : unreadNotificationCount}</p>
-              </div>
-              <FaBell className="text-3xl text-blue-500 opacity-80" />
-            </div>
-            <p className="text-xs text-gray-500 mt-3">New notifications</p>
-          </div>
-        </NavLink>
-      </motion.div>
-
-      {/* Quick Info Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Recent Matches */}
-        <motion.div
-          className="lg:col-span-2 bg-white rounded-2xl shadow-lg p-6"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-        >
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-xl font-bold text-gray-800">Recent Matching Requests</h2>
-            <NavLink to="/donor/matching-requests">
-              <p className="text-red-600 hover:text-red-700 text-sm font-semibold">View All →</p>
+              )}
+            </NavLink>
+            <NavLink to="/donor/profile">
+              <FaUserCircle className="text-3xl text-gray-700 hover:text-red-600" />
             </NavLink>
           </div>
+        </div>
+      </div>
 
-          {matchesLoading ? (
-            <div className="text-center py-8">
-              <div className="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-red-600"></div>
-              <p className="text-gray-500 mt-3">Loading matches...</p>
-            </div>
-          ) : recentMatches.length === 0 ? (
-            <div className="text-center py-8">
-              <div className="text-gray-400 mb-3">
-                <FaHeartbeat className="text-4xl mx-auto" />
-              </div>
-              <p className="text-gray-500">No matching requests yet.</p>
-              <p className="text-sm text-gray-400 mt-1">You'll see requests here when patients need your blood type.</p>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {recentMatches.map((req) => {
-                const color = statusColors[req.status] || statusColors["pending"];
-                return (
-                  <motion.div
-                    key={req._id}
-                    className={`border-l-4 p-4 rounded-xl flex justify-between items-center shadow-sm hover:shadow-md transition-shadow ${color.card}`}
-                    initial={{ opacity: 0, x: -10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                  >
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className={`text-sm ${color.badge} px-2 py-1 rounded font-medium flex items-center gap-1`}>
-                          <span>{color.icon}</span>
-                          {req.status}
-                        </span>
-                      </div>
-                      <p className="font-semibold text-gray-800">Patient: {req?.patientId?.name || "Anonymous"}</p>
-                      <div className="flex flex-wrap gap-3 mt-2">
-                        <p className="text-sm text-gray-600">Blood Group: <span className="font-bold text-red-600">{req.bloodGroup}</span></p>
-                        <p className="text-sm text-gray-600">Units: <span className="font-bold">{req.units}</span></p>
-                        <p className="text-sm text-gray-500">{formatDate(req.createdAt)}</p>
-                      </div>
-                    </div>
-                    <NavLink to={`/donor/matching-requests/${req._id}`} className="text-red-600 hover:text-red-700 font-medium text-sm">
-                      View →
-                    </NavLink>
-                  </motion.div>
-                );
-              })}
-            </div>
-          )}
-        </motion.div>
+      {/* Role badges */}
+      {userCurrentRoles.length > 0 && (
+        <div className="bg-gray-50 rounded-xl p-4 border mb-6">
+          <div className="flex flex-wrap gap-2 items-center">
+            <span className="text-sm text-gray-600 mr-2">Your roles:</span>
+            {userCurrentRoles.map(role => (
+              <button
+                key={role.id}
+                onClick={() => switchToExistingRole(role.id)}
+                className={`px-3 py-1.5 rounded-full text-sm flex items-center gap-2 ${role.id === currentRole ? 'bg-red-100 text-red-800 border border-red-300' : 'bg-gray-100 text-gray-800 border border-gray-300 hover:bg-gray-200'}`}
+              >
+                <span>{role.icon}</span>
+                <span>{role.name}</span>
+                {role.id === currentRole && <span className="text-xs bg-white px-2 rounded-full">Active</span>}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
-        {/* Quick Stats & Last Donation */}
-        <motion.div
-          className="bg-white rounded-2xl shadow-lg p-6"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4 }}
+      {/* Stats cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <div 
+          onClick={() => navigate("/donor/matching-requests")}
+          className="bg-white rounded-xl p-4 border hover:shadow-md cursor-pointer"
         >
-          <h2 className="text-xl font-bold text-gray-800 mb-6">Your Donation Summary</h2>
-          
-          {/* Last Donation Info */}
-          <div className="mb-6">
-            <div className="flex items-center gap-2 mb-3">
-              <FaHistory className="text-red-600" />
-              <h3 className="font-semibold text-gray-700">Last Donation</h3>
+          <div className="flex justify-between items-center">
+            <div>
+              <p className="text-gray-600 text-sm">Total Matches</p>
+              <p className="text-2xl font-bold text-red-700 mt-1">
+                {matchesLoading ? "..." : stats.totalMatches}
+              </p>
             </div>
-            {lastDonation ? (
-              <div className="bg-green-50 border border-green-200 rounded-xl p-4">
-                <div className="flex items-center justify-between mb-2">
-                  <p className="font-bold text-green-700">✅ Completed</p>
-                  <p className="text-sm text-green-600">{formatDate(lastDonation.updatedAt)}</p>
+            <div className="p-2.5 bg-red-100 text-red-600 rounded-lg">
+              <FaHeartbeat className="text-lg" />
+            </div>
+          </div>
+        </div>
+
+        <div 
+          onClick={() => navigate("/donor/history")}
+          className="bg-white rounded-xl p-4 border hover:shadow-md cursor-pointer"
+        >
+          <div className="flex justify-between items-center">
+            <div>
+              <p className="text-gray-600 text-sm">Completed</p>
+              <p className="text-2xl font-bold text-green-700 mt-1">
+                {matchesLoading ? "..." : stats.completedDonations}
+              </p>
+            </div>
+            <div className="p-2.5 bg-green-100 text-green-600 rounded-lg">
+              <FaHandHoldingHeart className="text-lg" />
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-xl p-4 border">
+          <div className="flex justify-between items-center">
+            <div>
+              <p className="text-gray-600 text-sm">Pending</p>
+              <p className="text-2xl font-bold text-yellow-700 mt-1">
+                {matchesLoading ? "..." : stats.pendingMatches}
+              </p>
+            </div>
+            <div className="p-2.5 bg-yellow-100 text-yellow-600 rounded-lg">
+              <FaClock className="text-lg" />
+            </div>
+          </div>
+        </div>
+
+        <div 
+          onClick={() => navigate("/notifications")}
+          className="bg-white rounded-xl p-4 border hover:shadow-md cursor-pointer"
+        >
+          <div className="flex justify-between items-center">
+            <div>
+              <p className="text-gray-600 text-sm">Notifications</p>
+              <p className="text-2xl font-bold text-blue-700 mt-1">
+                {matchesLoading ? "..." : stats.unreadNotifications}
+              </p>
+            </div>
+            <div className="p-2.5 bg-blue-100 text-blue-600 rounded-lg">
+              <FaBell className="text-lg" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Content - Better balanced layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+        {/* Recent Matches - Takes 2/3 width */}
+        <div className="lg:col-span-2">
+          <div className="bg-white rounded-xl border p-4 h-full">
+            <div className="flex justify-between items-center mb-4">
+              <div>
+                <h2 className="text-lg font-bold text-gray-900">Recent Matching Requests</h2>
+                <p className="text-gray-600 text-sm">Patients needing your blood type</p>
+              </div>
+              <NavLink to="/donor/matching-requests" className="text-red-600 hover:text-red-700 text-sm font-medium flex items-center gap-1">
+                View All <FaArrowRight />
+              </NavLink>
+            </div>
+
+            {matchesLoading ? (
+              <div className="text-center py-8">
+                <div className="inline-block h-8 w-8 border-2 border-red-600 border-t-transparent rounded-full animate-spin"></div>
+                <p className="text-gray-500 mt-3">Loading...</p>
+              </div>
+            ) : recentMatches.length === 0 ? (
+              <div className="text-center py-8">
+                <div className="text-gray-300 mb-3">
+                  <FaHeartbeat className="text-4xl mx-auto" />
                 </div>
-                <p className="text-sm text-gray-700">
-                  You donated <span className="font-bold">{lastDonation.units} unit(s)</span> of {lastDonation.bloodGroup} blood
-                </p>
-                <p className="text-xs text-gray-500 mt-2">
-                  Patient: {lastDonation.patientId?.name || "Anonymous"}
+                <p className="text-gray-500">No matching requests yet</p>
+                <p className="text-sm text-gray-400 mt-1">
+                  When patients need your blood type, requests will appear here
                 </p>
               </div>
             ) : (
-              <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 text-center">
-                <p className="text-gray-500">No donation history yet.</p>
-                <p className="text-sm text-gray-400 mt-1">Your first donation will appear here.</p>
+              <div className="space-y-3">
+                {recentMatches.map(req => {
+                  const status = statusConfig[req.status] || statusConfig.pending;
+                  return (
+                    <div key={req._id} className={`p-4 rounded-lg border ${status.border} ${status.bg}`}>
+                      <div className="flex justify-between items-start">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-2">
+                            <span className={`px-2 py-1 rounded text-xs font-medium ${status.badge}`}>
+                              {status.icon} {req.status?.charAt(0).toUpperCase() + req.status?.slice(1)}
+                            </span>
+                            <span className="text-xs text-gray-500">
+                              {formatDate(req.createdAt)}
+                            </span>
+                          </div>
+                          
+                          <div className="space-y-2">
+                            <h3 className="font-bold text-gray-900">
+                              {req?.patientId?.name || "Anonymous Patient"}
+                            </h3>
+                            
+                            <div className="grid grid-cols-2 gap-3">
+                              <div className="flex items-center gap-2">
+                                <FaTint className="text-red-500 text-sm" />
+                                <div>
+                                  <p className="text-xs text-gray-600">Blood Group</p>
+                                  <p className="font-bold text-red-600">{req.bloodGroup}</p>
+                                </div>
+                              </div>
+                              
+                              <div className="flex items-center gap-2">
+                                <FaHandHoldingHeart className="text-blue-500 text-sm" />
+                                <div>
+                                  <p className="text-xs text-gray-600">Units Needed</p>
+                                  <p className="font-bold text-gray-900">{req.units}</p>
+                                </div>
+                              </div>
+                            </div>
+                            
+                            {req.hospital && (
+                              <div className="flex items-center gap-2">
+                                <FaHospital className="text-gray-500 text-sm" />
+                                <p className="text-sm text-gray-700">{req.hospital}</p>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        
+                        <NavLink 
+                          to={`/donor/matching-requests/${req._id}`}
+                          className="text-red-600 hover:text-red-700 ml-2"
+                        >
+                          <FaArrowRight />
+                        </NavLink>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Sidebar - Takes 1/3 width */}
+        <div className="space-y-4">
+          {/* Blood Group Card */}
+          <div className="bg-white rounded-xl border p-4">
+            <div className="flex items-center gap-2 mb-3">
+              <FaTint className="text-red-600" />
+              <h3 className="font-bold text-gray-900">Your Blood Group</h3>
+            </div>
+            <div className="text-center p-3 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-3xl font-bold text-red-700">{user?.bloodGroup || "N/A"}</p>
+              <p className="text-sm text-gray-600 mt-1">Ready to save lives!</p>
+            </div>
+          </div>
+
+          {/* Quick Stats */}
+          <div className="bg-white rounded-xl border p-4">
+            <div className="flex items-center gap-2 mb-3">
+              <FaHistory className="text-blue-600" />
+              <h3 className="font-bold text-gray-900">Donation Summary</h3>
+            </div>
+            
+            {lastDonation ? (
+              <div>
+                <div className="p-3 bg-green-50 border border-green-200 rounded-lg mb-3">
+                  <p className="font-bold text-green-800 text-sm">Last Donation</p>
+                  <p className="text-sm text-gray-800 mt-1">
+                    Donated <span className="font-bold">{lastDonation.units} unit(s)</span> of{" "}
+                    <span className="font-bold text-red-600">{lastDonation.bloodGroup}</span>
+                  </p>
+                  <p className="text-xs text-gray-500 mt-2">
+                    {new Date(lastDonation.updatedAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                  </p>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="text-center p-2 bg-gray-50 border rounded">
+                    <p className="text-xs text-gray-600">Total Donated</p>
+                    <p className="font-bold text-gray-900">{stats.completedDonations}</p>
+                  </div>
+                  <div className="text-center p-2 bg-yellow-50 border border-yellow-200 rounded">
+                    <p className="text-xs text-gray-600">Lives Saved</p>
+                    <p className="font-bold text-yellow-700">{stats.completedDonations * 3}</p>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg text-center">
+                <p className="text-gray-500">No donation history yet</p>
               </div>
             )}
           </div>
 
-          {/* Blood Group Info */}
-          <div className="mb-6">
-            <div className="flex items-center gap-2 mb-3">
-              <FaTint className="text-red-600" />
-              <h3 className="font-semibold text-gray-700">Your Blood Group</h3>
-            </div>
-            <div className="text-center p-4 bg-red-50 border border-red-200 rounded-xl">
-              <p className="text-4xl font-bold text-red-600">{user?.bloodGroup || "Not Set"}</p>
-              <p className="text-sm text-gray-600 mt-2">
-                {user?.bloodGroup 
-                  ? "Patients with this blood type can receive your donations"
-                  : "Please update your profile with your blood type"
-                }
-              </p>
-            </div>
-          </div>
-
-          {/* Role Quick Info */}
-          {userHasMultipleRoles && (
-            <div className="mb-6 p-4 bg-gradient-to-r from-gray-50 to-gray-100 border border-gray-200 rounded-xl">
-              <div className="flex items-center gap-2 mb-3">
-                <FaExchangeAlt className="text-gray-700" />
-                <h3 className="font-semibold text-gray-700">Role Access</h3>
-              </div>
-              <div className="space-y-2">
-                {availableRoles.map((role) => (
-                  <div 
-                    key={role.id} 
-                    className={`flex items-center justify-between p-2 rounded-lg ${role.id === currentRole ? role.bgColor + ' border ' + role.borderColor : 'bg-white'}`}
-                  >
-                    <div className="flex items-center gap-2">
-                      <span className={role.color}>{role.icon}</span>
-                      <span className="text-sm font-medium">{role.name}</span>
-                    </div>
-                    {role.id === currentRole ? (
-                      <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">Active</span>
-                    ) : (
-                      <span className="text-xs text-gray-500">Available</span>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Quick Links */}
-          <div>
-            <h3 className="font-semibold text-gray-700 mb-3">Quick Actions</h3>
+          {/* Quick Actions */}
+          <div className="bg-white rounded-xl border p-4">
+            <h3 className="font-bold text-gray-900 mb-3">Quick Actions</h3>
             <div className="space-y-2">
               <NavLink to="/donor/matching-requests">
-                <div className="p-3 bg-gray-50 hover:bg-gray-100 rounded-lg transition flex items-center justify-between">
-                  <span className="font-medium">View All Requests</span>
-                  <span className="text-red-600">→</span>
+                <div className="p-2.5 bg-gray-50 hover:bg-gray-100 rounded-lg flex items-center justify-between">
+                  <span className="font-medium text-gray-900 text-sm">View All Requests</span>
+                  <FaArrowRight className="text-red-600 text-sm" />
                 </div>
               </NavLink>
+              
               <NavLink to="/donor/history">
-                <div className="p-3 bg-gray-50 hover:bg-gray-100 rounded-lg transition flex items-center justify-between">
-                  <span className="font-medium">Donation History</span>
-                  <span className="text-red-600">→</span>
+                <div className="p-2.5 bg-gray-50 hover:bg-gray-100 rounded-lg flex items-center justify-between">
+                  <span className="font-medium text-gray-900 text-sm">Donation History</span>
+                  <FaArrowRight className="text-red-600 text-sm" />
                 </div>
               </NavLink>
-              <NavLink to="/donor/notifications">
-                <div className="p-3 bg-gray-50 hover:bg-gray-100 rounded-lg transition flex items-center justify-between">
-                  <span className="font-medium">Notifications</span>
-                  {unreadNotificationCount > 0 && (
-                    <span className="bg-red-600 text-white text-xs px-2 py-1 rounded-full">
-                      {unreadNotificationCount}
-                    </span>
-                  )}
+              
+              <NavLink to="/notifications">
+                <div className="p-2.5 bg-gray-50 hover:bg-gray-100 rounded-lg flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium text-gray-900 text-sm">Notifications</span>
+                    {stats.unreadNotifications > 0 && (
+                      <span className="bg-red-600 text-white text-xs px-1.5 py-0.5 rounded-full">
+                        {stats.unreadNotifications}
+                      </span>
+                    )}
+                  </div>
+                  <FaArrowRight className="text-red-600 text-sm" />
+                </div>
+              </NavLink>
+              
+              <NavLink to="/donor/profile">
+                <div className="p-2.5 bg-gray-50 hover:bg-gray-100 rounded-lg flex items-center justify-between">
+                  <span className="font-medium text-gray-900 text-sm">Edit Profile</span>
+                  <FaArrowRight className="text-red-600 text-sm" />
                 </div>
               </NavLink>
             </div>
           </div>
-        </motion.div>
+        </div>
       </div>
 
-      {/* Notifications Preview */}
-      <motion.div
-        className="bg-white rounded-2xl shadow-lg p-6"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.5 }}
-      >
-        <div className="flex justify-between items-center mb-6">
+      {/* Notifications Section - Full width at bottom */}
+      <div className="bg-white rounded-xl border p-4">
+        <div className="flex justify-between items-center mb-4">
           <div className="flex items-center gap-2">
-            <h2 className="text-xl font-bold text-gray-800">Recent Notifications</h2>
-            {unreadNotificationCount > 0 && (
-              <span className="bg-red-100 text-red-700 text-xs font-bold px-2 py-1 rounded-full">
-                {unreadNotificationCount} new
+            <h2 className="text-lg font-bold text-gray-900">Recent Notifications</h2>
+            {stats.unreadNotifications > 0 && (
+              <span className="bg-red-100 text-red-700 text-xs px-2 py-1 rounded-full">
+                {stats.unreadNotifications} new
               </span>
             )}
           </div>
-          <NavLink to="/donor/notifications">
-            <p className="text-red-600 hover:text-red-700 text-sm font-semibold">View All →</p>
+          <NavLink to="/notifications" className="text-blue-600 hover:text-blue-700 text-sm font-medium flex items-center gap-1">
+            View All <FaArrowRight />
           </NavLink>
         </div>
 
-        {notifLoading ? (
-          <div className="text-center py-8">
-            <div className="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-600"></div>
-            <p className="text-gray-500 mt-3">Loading notifications...</p>
-          </div>
-        ) : notifications.length === 0 ? (
-          <div className="text-center py-8">
-            <div className="text-gray-400 mb-3">
-              <FaBell className="text-4xl mx-auto" />
-            </div>
-            <p className="text-gray-500">No notifications yet.</p>
-            <p className="text-sm text-gray-400 mt-1">You'll get updates about matching requests here.</p>
+        {notifications.length === 0 ? (
+          <div className="text-center py-4">
+            <p className="text-gray-500">No notifications yet</p>
           </div>
         ) : (
-          <div className="space-y-3">
-            {notifications.slice(0, 3).map((n) => (
-              <div
-                key={n._id}
-                className={`p-4 rounded-xl border-l-4 ${n.isRead 
-                  ? "bg-gray-50 border-gray-300 border-l-gray-400" 
-                  : "bg-red-50 border-red-200 border-l-red-500"
-                }`}
-              >
-                <div className="flex justify-between items-start">
-                  <div>
-                    <p className={`font-semibold ${n.isRead ? "text-gray-700" : "text-gray-900"}`}>
-                      {n.title}
-                      {!n.isRead && <span className="ml-2 text-xs text-red-600">● NEW</span>}
-                    </p>
-                    <p className="text-sm text-gray-600 mt-1">{n.message}</p>
-                    <p className="text-xs text-gray-500 mt-2">
-                      {new Date(n.createdAt).toLocaleString()}
-                    </p>
-                  </div>
-                </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {notifications.slice(0, 4).map(n => (
+              <div key={n._id} className={`p-3 rounded-lg border ${n.isRead ? 'bg-gray-50' : 'bg-blue-50'}`}>
+                <p className={`font-medium text-sm ${n.isRead ? 'text-gray-800' : 'text-gray-900'}`}>
+                  {n.title}
+                  {!n.isRead && <span className="ml-2 text-xs text-blue-600">● NEW</span>}
+                </p>
+                <p className="text-xs text-gray-600 mt-1 line-clamp-2">{n.message}</p>
+                <p className="text-xs text-gray-500 mt-2">
+                  {new Date(n.createdAt).toLocaleString('en-IN', { 
+                    hour: '2-digit', 
+                    minute: '2-digit', 
+                    month: 'short', 
+                    day: 'numeric' 
+                  })}
+                </p>
               </div>
             ))}
           </div>
         )}
-      </motion.div>
+      </div>
     </div>
   );
 }

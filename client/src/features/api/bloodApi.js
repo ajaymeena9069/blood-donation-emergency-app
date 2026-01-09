@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
 export const bloodApi = createApi({
@@ -6,14 +7,33 @@ export const bloodApi = createApi({
     baseQuery: fetchBaseQuery({
         baseUrl: "http://localhost:5000/api",
         credentials: "include",
-        prepareHeaders: (headers) => {
-            const token = localStorage.getItem("token");
-            if (token) headers.set("authorization", `Bearer ${token}`);
+        prepareHeaders: (headers, { getState }) => {
+            // FIX: Check both localStorage AND Redux store for token
+            let token = localStorage.getItem("token");
+
+            // If token not in localStorage, try to get from Redux store
+            if (!token) {
+                const state = getState();
+                token = state.auth?.token;
+            }
+
+            if (token) {
+                headers.set("authorization", `Bearer ${token}`);
+            }
             return headers;
         },
     }),
 
-    tagTypes: ["Request", "Notifications", "DonorNotifications", "DonorMatches", "Donor", "Donors", "profile"],
+    tagTypes: [
+        "Request",
+        "Notifications",
+        "DonorNotifications",
+        "DonorMatches",
+        "Donor",
+        "Donors",
+        "Profile",
+        "User"
+    ],
 
     endpoints: (builder) => ({
 
@@ -41,19 +61,40 @@ export const bloodApi = createApi({
 
         getProfile: builder.query({
             query: () => ({
-                url: 'user/profile',
+                url: '/user/profile',
                 method: 'GET'
             }),
-            providesTags: ['Profile'],
+            providesTags: ['Profile', 'User'],
         }),
 
         updateUser: builder.mutation({
             query: (data) => ({
-                url: 'user/profile',
+                url: '/user/profile',
                 method: 'PUT',
                 body: data,
             }),
-            invalidatesTags: ['Profile'],
+            invalidatesTags: ['Profile', 'User'], // FIX: Added 'User' tag
+        }),
+
+        activateRole: builder.mutation({
+            query: ({ roleToActivate }) => ({
+                url: '/user/activate-role',
+                method: 'POST',
+                body: { roleToActivate },
+            }),
+            // FIX: Added cache update logic for role activation
+            invalidatesTags: ['User', 'Profile'], // Invalidate user and profile data
+            onQueryStarted: async (arg, { dispatch, queryFulfilled }) => {
+                try {
+                    const { data } = await queryFulfilled;
+                    if (data.success && data.data?.token) {
+                        // Update token in localStorage
+                        localStorage.setItem('token', data.data.token);
+                    }
+                } catch (error) {
+                    console.error('Failed to update token after role activation:', error);
+                }
+            },
         }),
 
         /* ------------------------------------------------------------------
@@ -138,19 +179,13 @@ export const bloodApi = createApi({
         }),
 
         /* ------------------------------------------------------------------
-            NOTIFICATIONS (NEW UPDATED)
+            NOTIFICATIONS
         ------------------------------------------------------------------ */
 
         // Patient notifications
         getNotifications: builder.query({
             query: (userId) => `/notifications/${userId}`,
             providesTags: ["Notifications"],
-        }),
-
-        // Donor notifications
-        getDonorNotifications: builder.query({
-            query: (donorId) => `/notifications/donor/${donorId}`,
-            providesTags: ["DonorNotifications"],
         }),
 
         // CREATE NOTIFICATION (works for both patient & donor)
@@ -222,16 +257,18 @@ export const bloodApi = createApi({
    EXPORTED HOOKS
 ------------------------------------------------------------------ */
 export const {
-    // Patient
-    useRegisterPatientMutation,
-    useLoginPatientMutation,
-    useCreateRequestMutation,
-    useGetPatientRequestsQuery,
-    useGetSingleRequestQuery,
+    // User Auth
     useRegisterUserMutation,
     useLoginUserMutation,
     useGetProfileQuery,
     useUpdateUserMutation,
+    useActivateRoleMutation,
+
+    // Patient Requests
+    useCreateRequestMutation,
+    useGetPatientRequestsQuery,
+    useGetSingleRequestQuery,
+
     // Donor
     useRegisterDonorMutation,
     useLoginDonorMutation,
@@ -239,6 +276,7 @@ export const {
     useGetDonorMatchesQuery,
     useDonorRespondMutation,
     useUpdateRequestStatusMutation,
+    useUpdateAvailabilityMutation,
 
     // Notifications
     useGetNotificationsQuery,
@@ -247,7 +285,7 @@ export const {
     useMarkAsReadMutation,
     useMarkAllAsReadMutation,
     useDeleteNotificationMutation,
-    useUpdateAvailabilityMutation,
+
     // Admin
     useLoginAdminMutation,
     useAdminGetAllRequestsQuery,

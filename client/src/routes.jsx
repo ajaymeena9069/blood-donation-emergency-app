@@ -12,36 +12,64 @@ import BloodCare from "./pages/BloodCamps";
 import PatientDashboard from "./pages/PatientDashboard";
 import PatientRequests from "./component/Common/PatientRequests";
 import SinglePatientRequest from "./component/ui/SinglePatientRequest";
-import AllNotifications from "./component/ui/AllNotifications";
 import DonorNotifications from "./component/ui/DonorNotifications";
 import DonorMatchingRequests from "./component/ui/DonorMatchingRequests";
 import UserRegistration from "./pages/UserRegistration";
 import UserLogin from "./pages/UserLogin";
 import UserProfile from "./pages/UserProfile";
+import Notifications from "./component/ui/Notifications";
 
 const routes = createBrowserRouter([
   {
     path: "/",
     element: <MainLayout />,
     children: [
+      // PUBLIC ROUTES
       { path: "/", element: <Home /> },
-
-      // SIMPLE ROUTES
       { path: "donors", element: <FindDonors /> },
       { path: "services", element: <Services /> },
       { path: "contact", element: <Contact /> },
       { path: "care", element: <BloodCare /> },
-      { path: "profile", element: <UserProfile /> },
-      // REGISTER ROUTES
+
+      // AUTH ROUTES
+      { path: "register", element: <UserRegistration /> },
+      { path: "login", element: <UserLogin /> },
+
+      // PROFILE ROUTES
       {
-        path: "register",
-        element: <UserRegistration />
+        path: "profile",
+        element: (
+          <ProtectedRoute>
+            <UserProfile />
+          </ProtectedRoute>
+        )
       },
       {
-        path: "login",
-        element: <UserLogin />
+        path: "donor/profile",
+        element: (
+          <ProtectedRoute role="donor">
+            <UserProfile />
+          </ProtectedRoute>
+        )
       },
-      // DASHBOARDS
+      {
+        path: "patient/profile",
+        element: (
+          <ProtectedRoute role="patient">
+            <UserProfile />
+          </ProtectedRoute>
+        )
+      },
+      {
+        path: "admin/profile",
+        element: (
+          <ProtectedRoute role="admin">
+            <UserProfile />
+          </ProtectedRoute>
+        )
+      },
+
+      // DASHBOARD ROUTES
       {
         path: "donor/dashboard",
         element: (
@@ -67,7 +95,7 @@ const routes = createBrowserRouter([
         ),
       },
 
-      // PATIENT REQUEST ROUTES
+      // PATIENT ROUTES
       {
         path: "patient/create/request",
         element: (
@@ -101,13 +129,15 @@ const routes = createBrowserRouter([
         ),
       },
       {
-        path: "patient/notifications",
+        path: "notifications",
         element: (
-          <ProtectedRoute role="patient">
-            <AllNotifications />
+          <ProtectedRoute roles={["patient", "donor", "admin"]}>
+            <Notifications />
           </ProtectedRoute>
         ),
       },
+
+      // DONOR ROUTES
       {
         path: "donor/notifications",
         element: (
@@ -117,13 +147,34 @@ const routes = createBrowserRouter([
         ),
       },
       {
-        path: "/donor/matching-requests",
+        path: "donor/matching-requests",
         element: (
           <ProtectedRoute role="donor">
             <DonorMatchingRequests />
           </ProtectedRoute>
         ),
       },
+      {
+        path: "donor/matching-requests/:id",
+        element: (
+          <ProtectedRoute role="donor">
+            <SinglePatientRequest />
+          </ProtectedRoute>
+        ),
+      },
+
+      // ADMIN ROUTES (Add if you have admin components)
+      // {
+      //   path: "admin/users",
+      //   element: (
+      //     <ProtectedRoute role="admin">
+      //       <AdminUsers />
+      //     </ProtectedRoute>
+      //   ),
+      // },
+
+      // CATCH-ALL ROUTE (404)
+      { path: "*", element: <div>404 - Page Not Found</div> },
     ],
   },
 ]);
