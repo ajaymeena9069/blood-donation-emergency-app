@@ -1,33 +1,18 @@
-import { Router } from "express";
+import express from "express";
 import {
-  createNotification,
-  getNotifications,
+  getMyNotifications,
   markAsRead,
   markAllAsRead,
   deleteNotification,
-  // getDonorNotifications,
+  getUnreadCount,
 } from "../controllers/notificationController.js";
-
 import { verifyToken } from "../middlewares/auth.js";
 
-const router = Router();
-
-// CREATE NOTIFICATION
-router.post("/", verifyToken, createNotification);
-
-// GET DONOR NOTIFICATIONS (keep above :userId)
-// router.get("/donor/:donorId", verifyToken, getDonorNotifications);
-
-// GET ALL (patient+donor)
-router.get("/:userId", verifyToken, getNotifications);
-
-// MARK READ
-router.put("/read/:id", verifyToken, markAsRead);
-
-// MARK ALL READ
-router.put("/read-all/:userId", verifyToken, markAllAsRead);
-
-// DELETE
-router.delete("/delete/:id", verifyToken, deleteNotification);
+const router = express.Router();
+router.get("/", verifyToken, getMyNotifications);
+router.get("/unread-count", verifyToken, getUnreadCount);
+router.patch("/:id/read", verifyToken, markAsRead);
+router.patch("/read-all", verifyToken, markAllAsRead);
+router.delete("/:id", verifyToken, deleteNotification);
 
 export default router;

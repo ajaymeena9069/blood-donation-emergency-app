@@ -12,12 +12,13 @@ import BloodCare from "./pages/BloodCamps";
 import PatientDashboard from "./pages/PatientDashboard";
 import PatientRequests from "./component/Common/PatientRequests";
 import SinglePatientRequest from "./component/ui/SinglePatientRequest";
-import DonorNotifications from "./component/ui/DonorNotifications";
+// import DonorNotifications from "./component/ui/DonorNotifications";
 import DonorMatchingRequests from "./component/ui/DonorMatchingRequests";
 import UserRegistration from "./pages/UserRegistration";
 import UserLogin from "./pages/UserLogin";
 import UserProfile from "./pages/UserProfile";
-import Notifications from "./component/ui/Notifications";
+import NotificationsPage from "./component/Common/Notification";
+// import Notifications from "./component/ui/Notifications";
 
 const routes = createBrowserRouter([
   {
@@ -132,22 +133,22 @@ const routes = createBrowserRouter([
         path: "notifications",
         element: (
           <ProtectedRoute roles={["patient", "donor", "admin"]}>
-            <Notifications />
+            <NotificationsPage />
           </ProtectedRoute>
         ),
       },
 
       // DONOR ROUTES
+      // {
+      //   path: "donor/notifications",
+      //   element: (
+      //     <ProtectedRoute role="donor">
+      //       <DonorNotifications />
+      //     </ProtectedRoute>
+      //   ),
+      // },
       {
-        path: "donor/notifications",
-        element: (
-          <ProtectedRoute role="donor">
-            <DonorNotifications />
-          </ProtectedRoute>
-        ),
-      },
-      {
-        path: "donor/matching-requests",
+        path: "donor/matches",
         element: (
           <ProtectedRoute role="donor">
             <DonorMatchingRequests />

@@ -1,27 +1,31 @@
 import express from "express";
 import {
-   createRequest,
-   getPatientRequests,
-   getSingleRequest,
-   getMatchedRequests,
-   handleDonorResponse,
-   // getDonorNotifications,
-   // adminGetAllRequests,
-   // adminUpdateStatus
+  createRequest,
+  getPatientRequests,
+  getSingleRequest,
+  getMatchedRequests,
+  acceptRequest,
+  cancelRequest,
+  deleteRequest,
+  updateRequest,
 } from "../controllers/requestController.js";
 import { verifyToken } from "../middlewares/auth.js";
 
 const router = express.Router();
 
 router.post("/create", verifyToken, createRequest);
+
 router.get("/patient/:patientId/requests", verifyToken, getPatientRequests);
+
 router.get("/single/:id", verifyToken, getSingleRequest);
+
 router.get("/donor/matches", verifyToken, getMatchedRequests);
-router.put("/donor/respond/:requestId", verifyToken, handleDonorResponse);
-// router.get("/donor/notifications", verifyToken, getDonorNotifications);
 
-// router.get("/admin/requests", verifyToken, adminGetAllRequests);
-// router.put("/admin/requests/:id", verifyToken, adminUpdateStatus);
+router.post("/:id/accept", verifyToken, acceptRequest);
 
-// 🟢 FIX: export router directly
+router.post("/:id/cancel", verifyToken, cancelRequest);
+
+router.delete("/:id", verifyToken, deleteRequest);
+
+router.put("/:id", verifyToken, updateRequest);
 export default router;

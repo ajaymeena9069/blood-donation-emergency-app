@@ -1,176 +1,194 @@
-/* eslint-disable no-unused-vars */
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { 
-  FaUserCircle, FaTint, FaBell, FaHandHoldingHeart, 
-  FaHistory, FaClock, FaExchangeAlt, FaArrowRight, 
-  FaCheckCircle, FaHeartbeat, FaCalendarAlt, FaUsers,
-  FaMapMarkerAlt, FaUserCheck, FaHospital
-} from "react-icons/fa";
-import { NavLink } from "react-router-dom";
+import { useNavigate, NavLink } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useSelector, useDispatch } from "react-redux";
-import { useGetDonorMatchesQuery, useGetNotificationsQuery, useActivateRoleMutation } from "../features/api/bloodApi";
+import {
+  FaBell,
+  FaHeartbeat,
+  FaHistory,
+  FaUserCircle,
+  FaCheck,
+  FaExclamationCircle,
+  FaExchangeAlt,
+  FaArrowRight,
+  FaUsers,
+  FaHospital,
+  FaTint,
+  FaClock,
+  FaMapMarkerAlt,
+  FaCheckCircle,
+} from "react-icons/fa";
+
+import {
+  useGetDonorMatchesQuery,
+  useGetMyNotificationsQuery,
+  useActivateRoleMutation,
+  useMarkNotificationAsReadMutation,
+  useDeleteNotificationMutation,
+} from "../features/api/bloodApi";
 import { setCredentials } from "../features/auth/authSlice";
+import FlashMessage from "../component/FlashMessage";
+import NotificationComponent from "../component/NotificationComponent";
 
 export default function DonorDashboard() {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { user } = useSelector((state) => state.auth);
-
   const [flash, setFlash] = useState({ type: "", message: "" });
   const [isSwitchingRole, setIsSwitchingRole] = useState(false);
   const [showRoleDropdown, setShowRoleDropdown] = useState(false);
 
-  const { data: matchesData, isLoading: matchesLoading } = useGetDonorMatchesQuery();
-  const { data: notificationsData } = useGetNotificationsQuery(user?.id, { skip: !user?.id });
+  const {
+    data: matchesData,
+    isLoading: matchesLoading,
+    refetch: refetchMatches
+  } = useGetDonorMatchesQuery();
 
+  const {
+    data: notificationsData,
+    refetch: refetchNotifications
+  } = useGetMyNotificationsQuery("donor");
+
+  // Mutations
   const [activateRole] = useActivateRoleMutation();
+  const [markAsRead] = useMarkNotificationAsReadMutation();
+  const [deleteNotification] = useDeleteNotificationMutation();
 
-  // Dashboard data
   const matches = matchesData?.data || [];
   const notifications = notificationsData?.data || [];
-  const recentMatches = matches.slice(0, 3);
-  const lastDonation = matches.filter(req => req.status === "completed").sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt))[0] || null;
 
   // Stats
+  const lastDonation = matches
+    .filter((req) => req.status === "completed")
+    .sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt))[0] || null;
+
   const stats = {
     totalMatches: matches.length,
-    completedDonations: matches.filter(req => req.status === "completed").length,
-    pendingMatches: matches.filter(req => req.status === "pending").length,
-    unreadNotifications: notifications.filter(n => !n.isRead).length
+    completedDonations: matches.filter((req) => req.status === "completed").length,
+    pendingMatches: matches.filter((req) => req.status === "pending").length,
+    acceptedMatches: matches.filter((req) => req.status === "accepted").length,
+    unreadNotifications: notifications.filter((n) => !n.isRead).length,
   };
 
-  // Role management
+  // SIMPLE ROLE MANAGEMENT
   const userRoles = user?.role || [];
-  const currentRole = "donor";
+  const currentRole = user?.activeRole || "donor";
 
   const allRoles = [
-    { id: "donor", name: "Blood Donor", icon: "🩸", color: "from-red-500 to-red-600", bg: "bg-red-50", border: "border-red-200" },
-    { id: "patient", name: "Blood Recipient", icon: "🏥", color: "from-blue-500 to-blue-600", bg: "bg-blue-50", border: "border-blue-200" },
-    { id: "admin", name: "System Admin", icon: "👑", color: "from-gray-700 to-gray-800", bg: "bg-gray-50", border: "border-gray-200" }
+    { id: "donor", name: "Blood Donor", icon: "🩸", color: "from-red-500 to-red-600" },
+    { id: "patient", name: "Blood Recipient", icon: "🏥", color: "from-blue-500 to-blue-600" },
+    { id: "admin", name: "System Admin", icon: "👑", color: "from-gray-700 to-gray-800" }
   ];
 
   const userCurrentRoles = allRoles.filter(role => userRoles.includes(role.id));
-  const availableRoles = allRoles.filter(role => !userRoles.includes(role.id) && role.id !== currentRole);
+  const availableRoles = allRoles.filter(role => !userRoles.includes(role.id));
 
   // Status config
-  const statusConfig = {
-    pending: { 
-      bg: "bg-yellow-50", 
-      text: "text-yellow-800", 
-      border: "border-yellow-200",
-      badge: "bg-yellow-100 text-yellow-800 border-yellow-300",
-      icon: "⏳"
-    },
-    accepted: { 
-      bg: "bg-blue-50", 
-      text: "text-blue-800", 
-      border: "border-blue-200",
-      badge: "bg-blue-100 text-blue-800 border-blue-300",
-      icon: "✅"
-    },
-    completed: { 
-      bg: "bg-green-50", 
-      text: "text-green-800", 
-      border: "border-green-200",
-      badge: "bg-green-100 text-green-800 border-green-300",
-      icon: "🎉"
-    },
-    canceled: { 
-      bg: "bg-red-50", 
-      text: "text-red-800", 
-      border: "border-red-200",
-      badge: "bg-red-100 text-red-800 border-red-300",
-      icon: "❌"
+  const getStatusConfig = (status) => {
+    switch (status) {
+      case 'completed': return { bg: "bg-green-50", text: "text-green-800", border: "border-green-200", badge: "bg-green-100 text-green-800 border-green-300", icon: "✓", label: 'Completed' };
+      case 'accepted': return { bg: "bg-blue-50", text: "text-blue-800", border: "border-blue-200", badge: "bg-blue-100 text-blue-800 border-blue-300", icon: '✓', label: 'Accepted' };
+      case 'pending': return { bg: "bg-yellow-50", text: "text-yellow-800", border: "border-yellow-200", badge: "bg-yellow-100 text-yellow-800 border-yellow-300", icon: '⏳', label: 'Pending' };
+      case 'canceled': return { bg: "bg-red-50", text: "text-red-800", border: "border-red-200", badge: "bg-red-100 text-red-800 border-red-300", icon: '✗', label: 'Canceled' };
+      default: return { bg: "bg-gray-50", text: "text-gray-800", border: "border-gray-200", badge: "bg-gray-100 text-gray-800 border-gray-300", icon: '?', label: status };
     }
   };
 
-  // Role switch handler
+  // SIMPLE ROLE SWITCH HANDLER
   const handleRoleSwitch = async (roleId) => {
-    if (isSwitchingRole) return;
+    if (isSwitchingRole || roleId === currentRole) return;
 
     setIsSwitchingRole(true);
     setShowRoleDropdown(false);
-    setFlash({ type: "info", message: `Activating ${roleId} role...` });
+    setFlash({ type: "info", message: `Switching to ${roleId} role...` });
 
     try {
-      const response = await activateRole({ roleToActivate: roleId }).unwrap();
+      const response = await activateRole(roleId).unwrap();
+
       if (response.success) {
         if (response.data?.token) {
           localStorage.setItem('token', response.data.token);
-          dispatch(setCredentials({
-            token: response.data.token,
-            user: response.data?.user || user
-          }));
         }
-        setFlash({ type: "success", message: `✅ Role activated! Redirecting...` });
-        setTimeout(() => navigate(`/${roleId}/dashboard`), 1000);
-      } else {
-        throw new Error(response.message || "Activation failed");
+
+        dispatch(setCredentials({
+          token: response.data?.token || localStorage.getItem('token'),
+          user: response.data?.user || user
+        }));
+
+        setFlash({ type: "success", message: `✅ Switched to ${roleId}!` });
+
+        setTimeout(() => {
+          navigate(`/${roleId}/dashboard`);
+        }, 500);
       }
     } catch (error) {
       console.error("Role switch error:", error);
       setFlash({
         type: "error",
-        message: `❌ ${error?.data?.message || error.message || "Failed to activate role"}`
+        message: `❌ ${error?.data?.message || "Failed to switch role"}`
       });
     } finally {
       setIsSwitchingRole(false);
     }
   };
 
-  // Quick switch to existing role
+  // Quick switch between existing roles
   const switchToExistingRole = (roleId) => {
     if (roleId === currentRole) return;
-    setFlash({ type: "info", message: `Switching to ${roleId} dashboard...` });
-    setTimeout(() => navigate(`/${roleId}/dashboard`), 300);
+    handleRoleSwitch(roleId);
   };
 
-  // Flash message component
-  const FlashMessage = () => {
-    if (!flash.message) return null;
+  // Notification handlers
+  const handleRead = async (id) => {
+    try {
+      await markAsRead({ notificationId: id }).unwrap();
+      refetchNotifications();
+    } catch (err) {
+      console.error("Mark as read failed:", err);
+    }
+  };
 
-    const colors = {
-      success: "bg-green-50 border-green-300",
-      error: "bg-red-50 border-red-300",
-      info: "bg-blue-50 border-blue-300"
-    };
-
-    return (
-      <motion.div
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className={`fixed top-6 right-6 z-50 rounded-lg border p-4 shadow-lg max-w-md ${colors[flash.type]}`}
-      >
-        <div className="flex items-start">
-          <FaCheckCircle className={`mt-1 ${flash.type === 'success' ? 'text-green-600' : flash.type === 'error' ? 'text-red-600' : 'text-blue-600'}`} />
-          <div className="ml-3 flex-1">
-            <p className="font-medium capitalize text-gray-900">{flash.type}</p>
-            <p className="text-sm text-gray-700 mt-1">{flash.message}</p>
-          </div>
-          <button 
-            onClick={() => setFlash({ type: "", message: "" })} 
-            className="ml-4 text-gray-500 hover:text-gray-800"
-          >
-            ✕
-          </button>
-        </div>
-      </motion.div>
-    );
+  const handleDelete = async (id) => {
+    if (window.confirm("Delete this notification?")) {
+      try {
+        await deleteNotification({ notificationId: id }).unwrap();
+        refetchNotifications();
+      } catch (err) {
+        console.error("Delete failed:", err);
+      }
+    }
   };
 
   // Format date
-  const formatDate = (date) => {
-    return new Date(date).toLocaleDateString('en-IN', {
+  const formatDate = (dateString) => {
+    if (!dateString) return "Never";
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-IN', {
       day: 'numeric',
-      month: 'short'
+      month: 'short',
+      year: 'numeric'
     });
   };
 
+  // Calculate next eligible date
+  const getNextEligibleDate = () => {
+    if (!user?.nextEligibleDate) return null;
+    const nextDate = new Date(user.nextEligibleDate);
+    const today = new Date();
+
+    if (nextDate <= today) return "Eligible Now";
+
+    const diffTime = nextDate - today;
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return `In ${diffDays} day${diffDays !== 1 ? 's' : ''}`;
+  };
+
+  const recentMatches = matches.slice(0, 3);
+  const recentNotifications = notifications.slice(0, 3);
+
   return (
-    <div className="max-w-[1200px] mx-auto px-4 py-6">
-      <FlashMessage />
+    <div className="max-w-6xl mx-auto px-4 py-6">
+      <FlashMessage flash={flash} setFlash={setFlash} />
 
       {/* Header */}
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-6">
@@ -186,7 +204,7 @@ export default function DonorDashboard() {
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center lg:w-auto w-full lg:justify-normal justify-between gap-3">
           {availableRoles.length > 0 && (
             <div className="relative">
               <button
@@ -197,19 +215,19 @@ export default function DonorDashboard() {
                 {isSwitchingRole ? (
                   <>
                     <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                    <span>Activating...</span>
+                    <span>Switching...</span>
                   </>
                 ) : (
                   <>
                     <FaExchangeAlt />
-                    <span>Activate Role</span>
+                    <span>Add New Role</span>
                   </>
                 )}
               </button>
-              
+
               {showRoleDropdown && (
                 <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-lg border py-2 z-50">
-                  <p className="px-4 py-2 text-sm font-medium text-gray-700">Available Roles</p>
+                  <p className="px-4 py-2 text-sm font-medium text-gray-700">Add New Role</p>
                   {availableRoles.map(role => (
                     <button
                       key={role.id}
@@ -227,10 +245,10 @@ export default function DonorDashboard() {
               )}
             </div>
           )}
-          
+
           <div className="flex items-center gap-2">
             <NavLink to="/notifications" className="relative">
-              <FaBell className="text-xl text-gray-600 hover:text-blue-600" />
+              <FaBell className="text-xl text-gray-600 hover:text-red-600" />
               {stats.unreadNotifications > 0 && (
                 <span className="absolute -top-2 -right-2 bg-red-600 text-white text-xs h-5 w-5 rounded-full flex items-center justify-center">
                   {stats.unreadNotifications}
@@ -244,7 +262,7 @@ export default function DonorDashboard() {
         </div>
       </div>
 
-      {/* Role badges */}
+      {/* Role badges - SIMPLE */}
       {userCurrentRoles.length > 0 && (
         <div className="bg-gray-50 rounded-xl p-4 border mb-6">
           <div className="flex flex-wrap gap-2 items-center">
@@ -253,21 +271,51 @@ export default function DonorDashboard() {
               <button
                 key={role.id}
                 onClick={() => switchToExistingRole(role.id)}
-                className={`px-3 py-1.5 rounded-full text-sm flex items-center gap-2 ${role.id === currentRole ? 'bg-red-100 text-red-800 border border-red-300' : 'bg-gray-100 text-gray-800 border border-gray-300 hover:bg-gray-200'}`}
+                className={`px-3 py-1.5 rounded-full text-sm flex items-center gap-2 transition-all ${role.id === currentRole
+                  ? 'bg-gradient-to-r from-red-500 to-red-600 text-white shadow-md'
+                  : 'bg-gray-100 text-gray-800 border border-gray-300 hover:bg-gray-200'
+                  }`}
               >
                 <span>{role.icon}</span>
                 <span>{role.name}</span>
-                {role.id === currentRole && <span className="text-xs bg-white px-2 rounded-full">Active</span>}
+                {role.id === currentRole && (
+                  <span className="text-xs bg-white text-red-600 px-2 rounded-full">Active</span>
+                )}
               </button>
             ))}
           </div>
         </div>
       )}
 
+      {/* Quick actions */}
+      <div className="flex flex-col sm:flex-row gap-4 mb-6">
+        <NavLink to="/donor/matches" className="flex-1">
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            className="w-full flex items-center justify-center gap-3 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white px-4 py-3 rounded-xl shadow-lg transition-all text-sm"
+          >
+            <FaHeartbeat />
+            <span className="font-semibold">View All Matches</span>
+          </motion.button>
+        </NavLink>
+
+        <NavLink to="/donor/matches?status=completed" className="flex-1">
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            className="w-full flex items-center justify-center gap-3 bg-white border-2 border-red-600 text-red-600 hover:bg-red-50 px-4 py-3 rounded-xl shadow-lg transition-all text-sm"
+          >
+            <FaHistory />
+            <span className="font-semibold">Donation History</span>
+          </motion.button>
+        </NavLink>
+      </div>
+
       {/* Stats cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <div 
-          onClick={() => navigate("/donor/matching-requests")}
+        <div
+          onClick={() => navigate("/donor/matches")}
           className="bg-white rounded-xl p-4 border hover:shadow-md cursor-pointer"
         >
           <div className="flex justify-between items-center">
@@ -278,43 +326,46 @@ export default function DonorDashboard() {
               </p>
             </div>
             <div className="p-2.5 bg-red-100 text-red-600 rounded-lg">
-              <FaHeartbeat className="text-lg" />
+              <FaUsers className="text-lg" />
             </div>
           </div>
         </div>
 
-        <div 
-          onClick={() => navigate("/donor/history")}
+        <div
+          onClick={() => navigate("/donor/matches?status=accepted")}
+          className="bg-white rounded-xl p-4 border hover:shadow-md cursor-pointer transition-all duration-200"
+        >
+          <div className="flex justify-between items-center">
+            <div>
+              <p className="text-gray-600 text-sm">Accepted</p>
+              <p className="text-2xl font-bold text-green-600 mt-1">
+                {matchesLoading ? "..." : stats.acceptedMatches}
+              </p>
+            </div>
+            <div className="p-2.5 bg-green-50 text-green-500 rounded-lg">
+              <FaCheckCircle className="text-xl" />
+            </div>
+          </div>
+        </div>
+
+        <div
+          onClick={() => navigate("/donor/matches?status=pending")}
           className="bg-white rounded-xl p-4 border hover:shadow-md cursor-pointer"
         >
           <div className="flex justify-between items-center">
             <div>
-              <p className="text-gray-600 text-sm">Completed</p>
-              <p className="text-2xl font-bold text-green-700 mt-1">
-                {matchesLoading ? "..." : stats.completedDonations}
-              </p>
-            </div>
-            <div className="p-2.5 bg-green-100 text-green-600 rounded-lg">
-              <FaHandHoldingHeart className="text-lg" />
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-xl p-4 border">
-          <div className="flex justify-between items-center">
-            <div>
-              <p className="text-gray-600 text-sm">Pending</p>
+              <p className="text-gray-600 text-sm">Pending Matches</p>
               <p className="text-2xl font-bold text-yellow-700 mt-1">
                 {matchesLoading ? "..." : stats.pendingMatches}
               </p>
             </div>
             <div className="p-2.5 bg-yellow-100 text-yellow-600 rounded-lg">
-              <FaClock className="text-lg" />
+              <FaExclamationCircle className="text-lg" />
             </div>
           </div>
         </div>
 
-        <div 
+        <div
           onClick={() => navigate("/notifications")}
           className="bg-white rounded-xl p-4 border hover:shadow-md cursor-pointer"
         >
@@ -322,7 +373,7 @@ export default function DonorDashboard() {
             <div>
               <p className="text-gray-600 text-sm">Notifications</p>
               <p className="text-2xl font-bold text-blue-700 mt-1">
-                {matchesLoading ? "..." : stats.unreadNotifications}
+                {stats.unreadNotifications}
               </p>
             </div>
             <div className="p-2.5 bg-blue-100 text-blue-600 rounded-lg">
@@ -332,17 +383,17 @@ export default function DonorDashboard() {
         </div>
       </div>
 
-      {/* Main Content - Better balanced layout */}
+      {/* Main Content */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
         {/* Recent Matches - Takes 2/3 width */}
         <div className="lg:col-span-2">
           <div className="bg-white rounded-xl border p-4 h-full">
             <div className="flex justify-between items-center mb-4">
               <div>
-                <h2 className="text-lg font-bold text-gray-900">Recent Matching Requests</h2>
-                <p className="text-gray-600 text-sm">Patients needing your blood type</p>
+                <h2 className="text-lg font-bold text-gray-900">Recent Blood Requests</h2>
+                <p className="text-gray-600 text-sm">Blood requests matching your profile</p>
               </div>
-              <NavLink to="/donor/matching-requests" className="text-red-600 hover:text-red-700 text-sm font-medium flex items-center gap-1">
+              <NavLink to="/donor/matches/all" className="text-red-600 hover:text-red-700 text-sm font-medium flex items-center gap-1">
                 View All <FaArrowRight />
               </NavLink>
             </div>
@@ -350,69 +401,87 @@ export default function DonorDashboard() {
             {matchesLoading ? (
               <div className="text-center py-8">
                 <div className="inline-block h-8 w-8 border-2 border-red-600 border-t-transparent rounded-full animate-spin"></div>
-                <p className="text-gray-500 mt-3">Loading...</p>
+                <p className="text-gray-500 mt-3">Loading matches...</p>
               </div>
             ) : recentMatches.length === 0 ? (
               <div className="text-center py-8">
                 <div className="text-gray-300 mb-3">
                   <FaHeartbeat className="text-4xl mx-auto" />
                 </div>
-                <p className="text-gray-500">No matching requests yet</p>
-                <p className="text-sm text-gray-400 mt-1">
-                  When patients need your blood type, requests will appear here
-                </p>
+                <p className="text-gray-500">No matches yet</p>
+                <p className="text-sm text-gray-500 mt-1">Blood requests matching your profile will appear here</p>
               </div>
             ) : (
               <div className="space-y-3">
-                {recentMatches.map(req => {
-                  const status = statusConfig[req.status] || statusConfig.pending;
+                {recentMatches.map(match => {
+                  const status = getStatusConfig(match.status);
                   return (
-                    <div key={req._id} className={`p-4 rounded-lg border ${status.border} ${status.bg}`}>
+                    <div key={match._id} className={`p-4 rounded-lg border ${status.border} ${status.bg}`}>
                       <div className="flex justify-between items-start">
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-2">
                             <span className={`px-2 py-1 rounded text-xs font-medium ${status.badge}`}>
-                              {status.icon} {req.status?.charAt(0).toUpperCase() + req.status?.slice(1)}
+                              {status.icon} {status.label}
                             </span>
                             <span className="text-xs text-gray-500">
-                              {formatDate(req.createdAt)}
+                              {formatDate(match.createdAt)}
                             </span>
                           </div>
-                          
-                          <div className="space-y-2">
-                            <h3 className="font-bold text-gray-900">
-                              {req?.patientId?.name || "Anonymous Patient"}
-                            </h3>
-                            
+
+                          <div className="space-y-3">
                             <div className="grid grid-cols-2 gap-3">
                               <div className="flex items-center gap-2">
                                 <FaTint className="text-red-500 text-sm" />
                                 <div>
                                   <p className="text-xs text-gray-600">Blood Group</p>
-                                  <p className="font-bold text-red-600">{req.bloodGroup}</p>
+                                  <p className="font-bold text-red-600">{match.bloodGroup}</p>
                                 </div>
                               </div>
-                              
+
                               <div className="flex items-center gap-2">
-                                <FaHandHoldingHeart className="text-blue-500 text-sm" />
+                                <FaHeartbeat className="text-blue-500 text-sm" />
                                 <div>
                                   <p className="text-xs text-gray-600">Units Needed</p>
-                                  <p className="font-bold text-gray-900">{req.units}</p>
+                                  <p className="font-bold text-gray-900">{match.units}</p>
                                 </div>
                               </div>
                             </div>
-                            
-                            {req.hospital && (
-                              <div className="flex items-center gap-2">
-                                <FaHospital className="text-gray-500 text-sm" />
-                                <p className="text-sm text-gray-700">{req.hospital}</p>
+
+                            <div className="grid grid-cols-2 gap-3">
+                              {match.patient?.city && (
+                                <div className="flex items-center gap-2">
+                                  <FaMapMarkerAlt className="text-gray-500 text-sm" />
+                                  <div>
+                                    <p className="text-xs text-gray-600">Location</p>
+                                    <p className="text-sm font-medium text-gray-800">{match.patient.city}</p>
+                                  </div>
+                                </div>
+                              )}
+
+                              {match.hospital && (
+                                <div className="flex items-center gap-2">
+                                  <FaHospital className="text-gray-500 text-sm" />
+                                  <div>
+                                    <p className="text-xs text-gray-600">Hospital</p>
+                                    <p className="text-sm font-medium text-gray-800 line-clamp-1">{match.hospital}</p>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+
+                            {match.status === "pending" && (
+                              <div className="mt-3">
+                                <p className="text-xs text-yellow-600 bg-yellow-50 border border-yellow-200 rounded p-2">
+                                  <FaBell className="inline mr-1" />
+                                  Check matching requests to respond to this request
+                                </p>
                               </div>
                             )}
                           </div>
                         </div>
-                        
-                        <NavLink 
-                          to={`/donor/matching-requests/${req._id}`}
+
+                        <NavLink
+                          to={`/donor/matches/${match._id}`}
                           className="text-red-600 hover:text-red-700 ml-2"
                         >
                           <FaArrowRight />
@@ -428,74 +497,96 @@ export default function DonorDashboard() {
 
         {/* Sidebar - Takes 1/3 width */}
         <div className="space-y-4">
-          {/* Blood Group Card */}
+          {/* Profile Card */}
           <div className="bg-white rounded-xl border p-4">
             <div className="flex items-center gap-2 mb-3">
-              <FaTint className="text-red-600" />
-              <h3 className="font-bold text-gray-900">Your Blood Group</h3>
+              <FaUserCircle className="text-red-600" />
+              <h3 className="font-bold text-gray-900">Donor Profile</h3>
             </div>
-            <div className="text-center p-3 bg-red-50 border border-red-200 rounded-lg">
-              <p className="text-3xl font-bold text-red-700">{user?.bloodGroup || "N/A"}</p>
-              <p className="text-sm text-gray-600 mt-1">Ready to save lives!</p>
+            <div className="space-y-3">
+              <div className="text-center p-3 bg-red-50 border border-red-200 rounded-lg">
+                <p className="text-sm text-gray-600 mb-1">Blood Group</p>
+                <p className="text-2xl font-bold text-red-700">{user?.bloodGroup || "N/A"}</p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div className="text-center p-2 bg-gray-50 border rounded">
+                  <p className="text-xs text-gray-600">Total Donations</p>
+                  <p className="font-bold text-gray-900">{user?.totalDonations || 0}</p>
+                </div>
+                <div className="text-center p-2 bg-gray-50 border rounded">
+                  <p className="text-xs text-gray-600">Availability</p>
+                  <p className={`text-sm font-medium ${user?.available ? 'text-green-600' : 'text-red-600'}`}>
+                    {user?.available ? 'Available' : 'Not Available'}
+                  </p>
+                </div>
+              </div>
+
+              {lastDonation && (
+                <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                  <div className="flex items-center gap-2 mb-1">
+                    <FaHistory className="text-yellow-600 text-sm" />
+                    <p className="text-xs text-gray-600">Last Donation</p>
+                  </div>
+                  <p className="font-medium text-gray-900">{formatDate(lastDonation.updatedAt)}</p>
+                </div>
+              )}
+
+              {user?.nextEligibleDate && (
+                <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                  <div className="flex items-center gap-2 mb-1">
+                    <FaClock className="text-blue-600 text-sm" />
+                    <p className="text-xs text-gray-600">Next Eligible</p>
+                  </div>
+                  <p className={`font-medium ${getNextEligibleDate() === 'Eligible Now' ? 'text-green-600' : 'text-blue-600'}`}>
+                    {getNextEligibleDate()}
+                  </p>
+                  {getNextEligibleDate() !== 'Eligible Now' && (
+                    <p className="text-xs text-gray-500 mt-1">
+                      After {formatDate(user.nextEligibleDate)}
+                    </p>
+                  )}
+                </div>
+              )}
+
+              <NavLink to="/donor/profile">
+                <button className="w-full mt-1 py-2.5 bg-gradient-to-r from-gray-900 to-gray-800 text-white rounded-lg hover:shadow-md transition-all flex items-center justify-center gap-2 text-sm">
+                  Edit Profile <FaArrowRight />
+                </button>
+              </NavLink>
             </div>
           </div>
 
-          {/* Quick Stats */}
-          <div className="bg-white rounded-xl border p-4">
-            <div className="flex items-center gap-2 mb-3">
-              <FaHistory className="text-blue-600" />
-              <h3 className="font-bold text-gray-900">Donation Summary</h3>
-            </div>
-            
-            {lastDonation ? (
-              <div>
-                <div className="p-3 bg-green-50 border border-green-200 rounded-lg mb-3">
-                  <p className="font-bold text-green-800 text-sm">Last Donation</p>
-                  <p className="text-sm text-gray-800 mt-1">
-                    Donated <span className="font-bold">{lastDonation.units} unit(s)</span> of{" "}
-                    <span className="font-bold text-red-600">{lastDonation.bloodGroup}</span>
-                  </p>
-                  <p className="text-xs text-gray-500 mt-2">
-                    {new Date(lastDonation.updatedAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
-                  </p>
-                </div>
-                
-                <div className="grid grid-cols-2 gap-2">
-                  <div className="text-center p-2 bg-gray-50 border rounded">
-                    <p className="text-xs text-gray-600">Total Donated</p>
-                    <p className="font-bold text-gray-900">{stats.completedDonations}</p>
-                  </div>
-                  <div className="text-center p-2 bg-yellow-50 border border-yellow-200 rounded">
-                    <p className="text-xs text-gray-600">Lives Saved</p>
-                    <p className="font-bold text-yellow-700">{stats.completedDonations * 3}</p>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg text-center">
-                <p className="text-gray-500">No donation history yet</p>
-              </div>
-            )}
-          </div>
+          {/* Recent Notifications Card */}
+          <NotificationComponent
+            notifications={recentNotifications}
+            stats={{ unreadNotifications: stats.unreadNotifications }}
+            onMarkAsRead={handleRead}
+            onDelete={handleDelete}
+            title="Recent Notifications"
+            maxItems={3}
+            compact={true}
+            showViewAll={true}
+          />
 
           {/* Quick Actions */}
           <div className="bg-white rounded-xl border p-4">
             <h3 className="font-bold text-gray-900 mb-3">Quick Actions</h3>
             <div className="space-y-2">
-              <NavLink to="/donor/matching-requests">
+              <NavLink to="/donor/matches/all">
                 <div className="p-2.5 bg-gray-50 hover:bg-gray-100 rounded-lg flex items-center justify-between">
-                  <span className="font-medium text-gray-900 text-sm">View All Requests</span>
+                  <span className="font-medium text-gray-900 text-sm">View All Matches</span>
                   <FaArrowRight className="text-red-600 text-sm" />
                 </div>
               </NavLink>
-              
-              <NavLink to="/donor/history">
+
+              <NavLink to="/donor/matches/completed">
                 <div className="p-2.5 bg-gray-50 hover:bg-gray-100 rounded-lg flex items-center justify-between">
                   <span className="font-medium text-gray-900 text-sm">Donation History</span>
                   <FaArrowRight className="text-red-600 text-sm" />
                 </div>
               </NavLink>
-              
+
               <NavLink to="/notifications">
                 <div className="p-2.5 bg-gray-50 hover:bg-gray-100 rounded-lg flex items-center justify-between">
                   <div className="flex items-center gap-2">
@@ -509,7 +600,7 @@ export default function DonorDashboard() {
                   <FaArrowRight className="text-red-600 text-sm" />
                 </div>
               </NavLink>
-              
+
               <NavLink to="/donor/profile">
                 <div className="p-2.5 bg-gray-50 hover:bg-gray-100 rounded-lg flex items-center justify-between">
                   <span className="font-medium text-gray-900 text-sm">Edit Profile</span>
@@ -519,49 +610,6 @@ export default function DonorDashboard() {
             </div>
           </div>
         </div>
-      </div>
-
-      {/* Notifications Section - Full width at bottom */}
-      <div className="bg-white rounded-xl border p-4">
-        <div className="flex justify-between items-center mb-4">
-          <div className="flex items-center gap-2">
-            <h2 className="text-lg font-bold text-gray-900">Recent Notifications</h2>
-            {stats.unreadNotifications > 0 && (
-              <span className="bg-red-100 text-red-700 text-xs px-2 py-1 rounded-full">
-                {stats.unreadNotifications} new
-              </span>
-            )}
-          </div>
-          <NavLink to="/notifications" className="text-blue-600 hover:text-blue-700 text-sm font-medium flex items-center gap-1">
-            View All <FaArrowRight />
-          </NavLink>
-        </div>
-
-        {notifications.length === 0 ? (
-          <div className="text-center py-4">
-            <p className="text-gray-500">No notifications yet</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {notifications.slice(0, 4).map(n => (
-              <div key={n._id} className={`p-3 rounded-lg border ${n.isRead ? 'bg-gray-50' : 'bg-blue-50'}`}>
-                <p className={`font-medium text-sm ${n.isRead ? 'text-gray-800' : 'text-gray-900'}`}>
-                  {n.title}
-                  {!n.isRead && <span className="ml-2 text-xs text-blue-600">● NEW</span>}
-                </p>
-                <p className="text-xs text-gray-600 mt-1 line-clamp-2">{n.message}</p>
-                <p className="text-xs text-gray-500 mt-2">
-                  {new Date(n.createdAt).toLocaleString('en-IN', { 
-                    hour: '2-digit', 
-                    minute: '2-digit', 
-                    month: 'short', 
-                    day: 'numeric' 
-                  })}
-                </p>
-              </div>
-            ))}
-          </div>
-        )}
       </div>
     </div>
   );

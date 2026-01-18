@@ -12,26 +12,29 @@ const userSchema = new mongoose.Schema({
   gender: { type: String, required: true },
 
   // --- 2. ROLE MANAGEMENT ---
-  // Array use kiya hai kyunki ek banda Donor aur Patient dono ho sakta hai
-  role: { 
-    type: [String], 
-    enum: ["donor", "patient", "admin"], 
-    default: ["patient"] // Default patient rakha hai
+  role: {
+    type: [String],
+    enum: ["donor", "patient", "admin"],
+    default: ["patient"] // Default patient
+  },
+  activeRole: {
+    type: String,
+    enum: ["donor", "patient", "admin"],
+    default: "patient"
   },
 
   // --- 3. DONOR SPECIFIC FIELDS ---
-  // Ye fields sirf tab bhari jayengi jab role mein "donor" hoga
-  available: { 
-    type: Boolean, 
-    default: true 
+  available: {
+    type: Boolean,
+    default: false // by default false, true only if donor role active
   },
-  lastDonationDate: { 
-    type: Date 
-  },
-  // --- 5. EXTRA USEFUL FIELDS (Optional par recommended) ---
-  // address: { type: String },
-  // profilePicture: { type: String, default: "" },
+  lastDonationDate: { type: Date },
+  nextEligibleDate: { type: Date }, // 90-day cooldown
+  totalDonations: { type: Number, default: 0 },
 
+  // --- 4. OPTIONAL / EXTRA FIELDS ---
+  address: { type: String, default: "" },
+  profilePicture: { type: String, default: "" },
 }, { timestamps: true });
 
 const User = mongoose.model("User", userSchema);

@@ -1,6 +1,11 @@
 import { useParams, useNavigate } from "react-router-dom";
-import { FaTint, FaClock, FaArrowLeft, FaHospital, FaUser, FaMapMarkerAlt, FaExclamationTriangle, FaCalendarDay, FaPhone, FaEnvelope, FaCheckCircle } from "react-icons/fa";
-import { motion } from "framer-motion";
+import {
+  FaTint, FaArrowLeft, FaHospital,
+  FaUser, FaMapMarkerAlt, FaExclamationTriangle,
+  FaPhone, FaEnvelope, FaCheckCircle,
+  FaHeartbeat, FaUsers, FaClock,
+  FaInfoCircle, FaFileMedical
+} from "react-icons/fa";
 import { useGetSingleRequestQuery } from "../../features/api/bloodApi";
 
 export default function SinglePatientRequest() {
@@ -8,11 +13,11 @@ export default function SinglePatientRequest() {
   const navigate = useNavigate();
 
   const { data, isLoading } = useGetSingleRequestQuery(id);
-  const req = data?.data;
+  const request = data?.data;
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
           <div className="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-red-600 mb-4"></div>
           <p className="text-lg text-gray-600">Loading request details...</p>
@@ -21,13 +26,13 @@ export default function SinglePatientRequest() {
     );
   }
 
-  if (!req) {
+  if (!request) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center p-8 bg-white rounded-2xl shadow-lg max-w-md">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center p-8 bg-white rounded-2xl shadow-lg max-w-md border">
           <div className="text-gray-400 text-6xl mb-4">🩸</div>
           <h2 className="text-2xl font-bold text-gray-700 mb-2">Request Not Found</h2>
-          <p className="text-gray-500 mb-6">The blood request you're looking for doesn't exist or has been removed.</p>
+          <p className="text-gray-500 mb-6">The blood request doesn't exist or was removed.</p>
           <button
             onClick={() => navigate(-1)}
             className="px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition font-medium"
@@ -40,40 +45,40 @@ export default function SinglePatientRequest() {
   }
 
   const statusConfig = {
-    pending: { 
-      color: "bg-yellow-100 text-yellow-800 border-yellow-300",
+    pending: {
+      badge: "bg-yellow-100 text-yellow-800 border-yellow-300",
       icon: "⏳",
       label: "Pending"
     },
-    accepted: { 
-      color: "bg-blue-100 text-blue-800 border-blue-300",
+    accepted: {
+      badge: "bg-blue-100 text-blue-800 border-blue-300",
       icon: "✅",
       label: "Accepted"
     },
-    completed: { 
-      color: "bg-green-100 text-green-800 border-green-300",
+    completed: {
+      badge: "bg-green-100 text-green-800 border-green-300",
       icon: "🎉",
       label: "Completed"
     },
-    rejected: { 
-      color: "bg-red-100 text-red-800 border-red-300",
+    rejected: {
+      badge: "bg-red-100 text-red-800 border-red-300",
       icon: "❌",
       label: "Rejected"
     },
-    cancel: { 
-      color: "bg-gray-100 text-gray-800 border-gray-300",
+    cancelled: {
+      badge: "bg-gray-100 text-gray-800 border-gray-300",
       icon: "🚫",
       label: "Cancelled"
     },
   };
 
-  const statusInfo = statusConfig[req.status] || statusConfig.pending;
+  const statusInfo = statusConfig[request.status] || statusConfig.pending;
 
   const formatDate = (dateString) => {
+    if (!dateString) return "N/A";
     return new Date(dateString).toLocaleDateString('en-IN', {
-      weekday: 'long',
       day: 'numeric',
-      month: 'long',
+      month: 'short',
       year: 'numeric',
       hour: '2-digit',
       minute: '2-digit'
@@ -81,53 +86,43 @@ export default function SinglePatientRequest() {
   };
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      className="min-h-screen bg-gradient-to-b from-red-50 to-white py-8 px-4"
-    >
-      <div className="max-w-4xl mx-auto">
+    <div className="min-h-screen bg-gray-50 py-6">
+      <div className="max-w-6xl mx-auto px-4">
         {/* Back Button */}
-        <button
-          onClick={() => navigate(-1)}
-          className="flex items-center gap-2 px-4 py-3 mb-6 bg-white rounded-xl shadow-sm hover:shadow-md transition-all hover:bg-gray-50 text-gray-700 font-medium"
-        >
-          <FaArrowLeft />
-          Back to Requests
-        </button>
+        <div className="mb-6">
+          <button
+            onClick={() => navigate(-1)}
+            className="flex items-center gap-2 px-4 py-2.5 bg-white rounded-lg border hover:bg-gray-50 transition-all text-gray-700 font-medium"
+          >
+            <FaArrowLeft />
+            Back to Dashboard
+          </button>
+        </div>
 
         {/* Main Card */}
-        <motion.div
-          initial={{ y: 20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          className="bg-white rounded-2xl shadow-xl overflow-hidden"
-        >
-          {/* Header Banner */}
-          <div className="bg-gradient-to-r from-red-600 to-red-700 p-6 md:p-8">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="bg-white rounded-xl border">
+          {/* Header Section */}
+          <div className="border-b p-6">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
               <div className="flex items-center gap-4">
-                <div className="bg-white/20 p-3 rounded-full">
-                  <FaTint className="text-3xl text-white" />
+                <div className="p-3 bg-red-100 rounded-lg">
+                  <FaHeartbeat className="text-2xl text-red-600" />
                 </div>
                 <div>
-                  <h1 className="text-2xl md:text-3xl font-bold text-white flex items-center gap-2">
-                    Blood Request: <span className="text-white">{req.bloodGroup}</span>
-                  </h1>
-                  <p className="text-red-100 mt-1">
-                    Created on {formatDate(req.createdAt)}
-                  </p>
+                  <h1 className="text-2xl font-bold text-gray-900">Blood Request Details</h1>
+                  <p className="text-gray-600 mt-1">Request ID: {request._id?.substring(request._id.length - 8)}</p>
                 </div>
               </div>
-              
-              <div className="flex items-center gap-3">
-                <span className={`px-4 py-2 rounded-full font-bold text-sm flex items-center gap-2 ${statusInfo.color} border`}>
+
+              <div className="flex flex-wrap gap-2">
+                <span className={`px-3 py-1.5 rounded-full text-sm font-medium flex items-center gap-2 ${statusInfo.badge}`}>
                   <span>{statusInfo.icon}</span>
                   {statusInfo.label}
                 </span>
-                {req.emergency && (
-                  <span className="px-4 py-2 bg-white text-red-600 rounded-full font-bold text-sm flex items-center gap-2 animate-pulse">
+                {request.emergency && (
+                  <span className="px-3 py-1.5 bg-red-100 text-red-700 rounded-full text-sm font-medium flex items-center gap-2">
                     <FaExclamationTriangle />
-                    URGENT
+                    EMERGENCY
                   </span>
                 )}
               </div>
@@ -135,260 +130,246 @@ export default function SinglePatientRequest() {
           </div>
 
           {/* Main Content */}
-          <div className="p-6 md:p-8">
-            {/* Key Metrics */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-              <div className="bg-red-50 p-4 rounded-xl border border-red-100">
-                <div className="flex items-center justify-between">
+          <div className="p-6">
+            {/* Quick Stats */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+              <div className="bg-white border rounded-xl p-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-red-100 rounded-lg">
+                    <FaTint className="text-red-600" />
+                  </div>
                   <div>
                     <p className="text-sm text-gray-600">Blood Group</p>
-                    <p className="text-2xl font-bold text-red-600 mt-1">{req.bloodGroup}</p>
+                    <p className="text-xl font-bold text-red-700">{request.bloodGroup}</p>
                   </div>
-                  <FaTint className="text-2xl text-red-500 opacity-80" />
                 </div>
               </div>
-              
-              <div className="bg-blue-50 p-4 rounded-xl border border-blue-100">
-                <div className="flex items-center justify-between">
+
+              <div className="bg-white border rounded-xl p-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-blue-100 rounded-lg">
+                    <FaHeartbeat className="text-blue-600" />
+                  </div>
                   <div>
                     <p className="text-sm text-gray-600">Units Required</p>
-                    <p className="text-2xl font-bold text-blue-600 mt-1">{req.units} units</p>
+                    <p className="text-xl font-bold text-blue-700">{request.units} unit{request.units > 1 ? 's' : ''}</p>
                   </div>
-                  <FaTint className="text-2xl text-blue-500 opacity-80" />
                 </div>
               </div>
-              
-              <div className="bg-green-50 p-4 rounded-xl border border-green-100">
-                <div className="flex items-center justify-between">
+
+              <div className="bg-white border rounded-xl p-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-green-100 rounded-lg">
+                    <FaMapMarkerAlt className="text-green-600" />
+                  </div>
                   <div>
                     <p className="text-sm text-gray-600">Location</p>
-                    <p className="text-lg font-bold text-green-600 mt-1">{req.city}</p>
+                    <p className="text-lg font-bold text-green-700">{request.city}</p>
                   </div>
-                  <FaMapMarkerAlt className="text-2xl text-green-500 opacity-80" />
                 </div>
               </div>
-              
-              <div className="bg-purple-50 p-4 rounded-xl border border-purple-100">
-                <div className="flex items-center justify-between">
+
+              <div className="bg-white border rounded-xl p-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-purple-100 rounded-lg">
+                    <FaClock className="text-purple-600" />
+                  </div>
                   <div>
-                    <p className="text-sm text-gray-600">Emergency</p>
-                    <p className="text-lg font-bold text-purple-600 mt-1">{req.emergency ? "Yes" : "No"}</p>
+                    <p className="text-sm text-gray-600">Created On</p>
+                    <p className="text-sm font-bold text-purple-700">{formatDate(request.createdAt)}</p>
                   </div>
-                  <FaExclamationTriangle className="text-2xl text-purple-500 opacity-80" />
                 </div>
               </div>
             </div>
 
-            {/* Details Grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-              {/* Hospital Details Card */}
-              <motion.div
-                initial={{ x: -20, opacity: 0 }}
-                animate={{ x: 0, opacity: 1 }}
-                transition={{ delay: 0.1 }}
-                className="border border-gray-200 rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow"
-              >
-                <div className="flex items-center gap-3 mb-4 pb-3 border-b">
-                  <div className="p-2 bg-blue-100 rounded-lg">
-                    <FaHospital className="text-blue-600" />
+            {/* Two Column Layout */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Left Column */}
+              <div className="space-y-6">
+                {/* Hospital Details */}
+                <div className="bg-white border rounded-xl p-5">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="p-2 bg-blue-100 rounded-lg">
+                      <FaHospital className="text-blue-600" />
+                    </div>
+                    <h2 className="text-lg font-bold text-gray-900">Hospital Information</h2>
                   </div>
-                  <h2 className="text-xl font-bold text-gray-800">Hospital Details</h2>
-                </div>
-                
-                <div className="space-y-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8">
-                      <span className="text-gray-500">🏥</span>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-600">Hospital Name</p>
-                      <p className="font-medium">{req.hospitalName}</p>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center gap-3">
-                    <div className="w-8">
-                      <FaMapMarkerAlt className="text-gray-500" />
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-600">Location</p>
-                      <p className="font-medium">{req.city}</p>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center gap-3">
-                    <div className="w-8">
-                      <FaCalendarDay className="text-gray-500" />
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-600">Created</p>
-                      <p className="font-medium">{formatDate(req.createdAt)}</p>
-                    </div>
-                  </div>
-                </div>
-              </motion.div>
 
-              {/* Patient Details Card */}
-              <motion.div
-                initial={{ x: 20, opacity: 0 }}
-                animate={{ x: 0, opacity: 1 }}
-                transition={{ delay: 0.2 }}
-                className="border border-gray-200 rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow"
-              >
-                <div className="flex items-center gap-3 mb-4 pb-3 border-b">
-                  <div className="p-2 bg-green-100 rounded-lg">
-                    <FaUser className="text-green-600" />
-                  </div>
-                  <h2 className="text-xl font-bold text-gray-800">Patient Details</h2>
-                </div>
-                
-                {req.patientId ? (
                   <div className="space-y-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8">
-                        <FaUser className="text-gray-500" />
-                      </div>
+                    <div className="flex items-start gap-3">
+                      <FaHospital className="text-gray-400 mt-1" />
                       <div>
-                        <p className="text-sm text-gray-600">Name</p>
-                        <p className="font-medium">{req.patientId.name}</p>
+                        <p className="text-sm text-gray-600">Hospital Name</p>
+                        <p className="font-medium text-gray-900">{request.hospitalName}</p>
                       </div>
                     </div>
-                    
-                    <div className="flex items-center gap-3">
-                      <div className="w-8">
-                        <FaEnvelope className="text-gray-500" />
-                      </div>
+
+                    <div className="flex items-start gap-3">
+                      <FaMapMarkerAlt className="text-gray-400 mt-1" />
                       <div>
-                        <p className="text-sm text-gray-600">Email</p>
-                        <p className="font-medium break-all">{req.patientId.email}</p>
+                        <p className="text-sm text-gray-600">City</p>
+                        <p className="font-medium text-gray-900">{request.city}</p>
                       </div>
                     </div>
-                    
-                    {req.patientId.phone && (
-                      <div className="flex items-center gap-3">
-                        <div className="w-8">
-                          <FaPhone className="text-gray-500" />
-                        </div>
-                        <div>
-                          <p className="text-sm text-gray-600">Phone</p>
-                          <p className="font-medium">{req.patientId.phone}</p>
-                        </div>
-                      </div>
-                    )}
-                    
-                    <div className="mt-4 p-3 bg-gray-50 rounded-lg">
-                      <p className="text-sm text-gray-600">Patient ID</p>
-                      <p className="text-xs font-mono text-gray-500 break-all mt-1">{req.patientId._id}</p>
-                    </div>
-                  </div>
-                ) : (
-                  <p className="text-gray-500 text-center py-4">Patient details not available</p>
-                )}
-              </motion.div>
-            </div>
 
-            {/* Timeline Section */}
-            <motion.div
-              initial={{ y: 20, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ delay: 0.3 }}
-              className="border border-gray-200 rounded-xl p-5 shadow-sm"
-            >
-              <div className="flex items-center gap-3 mb-6">
-                <div className="p-2 bg-purple-100 rounded-lg">
-                  <FaClock className="text-purple-600" />
-                </div>
-                <h2 className="text-xl font-bold text-gray-800">Request Timeline</h2>
-              </div>
-
-              <div className="relative">
-                {/* Timeline Line */}
-                <div className="absolute left-6 top-0 bottom-0 w-0.5 bg-gray-300"></div>
-
-                {/* Timeline Steps */}
-                <div className="space-y-8">
-                  {/* Step 1: Request Created */}
-                  <div className="flex items-start gap-4">
-                    <div className={`w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 ${
-                      ["pending", "accepted", "completed", "rejected", "cancel"].includes(req.status)
-                        ? "bg-green-100 text-green-600"
-                        : "bg-gray-100 text-gray-400"
-                    }`}>
-                      <FaCheckCircle className="text-xl" />
-                    </div>
-                    <div>
-                      <h3 className="font-bold text-gray-800">Request Created</h3>
-                      <p className="text-gray-600 mt-1">Your blood request was successfully created and submitted.</p>
-                      <p className="text-sm text-gray-500 mt-2">
-                        {formatDate(req.createdAt)}
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Step 2: Searching Donors */}
-                  <div className="flex items-start gap-4">
-                    <div className={`w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 ${
-                      ["accepted", "completed"].includes(req.status)
-                        ? "bg-green-100 text-green-600"
-                        : req.status === "pending"
-                        ? "bg-yellow-100 text-yellow-600"
-                        : "bg-gray-100 text-gray-400"
-                    }`}>
-                      <span className="text-xl">🔍</span>
-                    </div>
-                    <div>
-                      <h3 className="font-bold text-gray-800">Searching Donors</h3>
-                      <p className="text-gray-600 mt-1">
-                        {req.status === "pending" 
-                          ? "Currently searching for matching blood donors in your area."
-                          : req.status === "accepted" || req.status === "completed"
-                          ? "Matching donors were found and notified."
-                          : "Searching for matching donors."
-                        }
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Step 3: Donor Response */}
-                  {["accepted", "completed", "rejected", "cancel"].includes(req.status) && (
-                    <div className="flex items-start gap-4">
-                      <div className={`w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 ${
-                        req.status === "accepted" || req.status === "completed"
-                          ? "bg-blue-100 text-blue-600"
-                          : req.status === "rejected"
-                          ? "bg-red-100 text-red-600"
-                          : "bg-gray-100 text-gray-400"
-                      }`}>
-                        <span className="text-xl">
-                          {req.status === "accepted" || req.status === "completed" ? "✅" : 
-                           req.status === "rejected" ? "❌" : "🚫"}
-                        </span>
-                      </div>
+                    <div className="flex items-start gap-3">
+                      <FaFileMedical className="text-gray-400 mt-1" />
                       <div>
-                        <h3 className="font-bold text-gray-800">
-                          {req.status === "accepted" ? "Donor Accepted" :
-                           req.status === "completed" ? "Completed" :
-                           req.status === "rejected" ? "Rejected" : "Cancelled"}
-                        </h3>
-                        <p className="text-gray-600 mt-1">
-                          {req.status === "accepted" 
-                            ? "A donor has accepted your request and will contact you soon."
-                            : req.status === "completed"
-                            ? "The blood donation has been successfully completed."
-                            : req.status === "rejected"
-                            ? "The request has been rejected."
-                            : "The request has been cancelled."
-                          }
+                        <p className="text-sm text-gray-600">Emergency Status</p>
+                        <p className={`font-medium ${request.emergency ? 'text-red-600' : 'text-gray-900'}`}>
+                          {request.emergency ? 'Yes - Urgent Need' : 'No - Regular Request'}
                         </p>
                       </div>
                     </div>
-                  )}
+                  </div>
+                </div>
+
+                {/* Timeline */}
+                <div className="bg-white border rounded-xl p-5">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="p-2 bg-purple-100 rounded-lg">
+                      <FaClock className="text-purple-600" />
+                    </div>
+                    <h2 className="text-lg font-bold text-gray-900">Timeline</h2>
+                  </div>
+
+                  <div className="space-y-4">
+                    <div className="flex items-start gap-3">
+                      <div className="p-2 bg-green-100 rounded-full">
+                        <FaCheckCircle className="text-green-600 text-sm" />
+                      </div>
+                      <div>
+                        <p className="font-medium text-gray-900">Request Created</p>
+                        <p className="text-sm text-gray-600">{formatDate(request.createdAt)}</p>
+                      </div>
+                    </div>
+
+                    {request.acceptedAt && (
+                      <div className="flex items-start gap-3">
+                        <div className="p-2 bg-blue-100 rounded-full">
+                          <FaUsers className="text-blue-600 text-sm" />
+                        </div>
+                        <div>
+                          <p className="font-medium text-gray-900">Request Accepted</p>
+                          <p className="text-sm text-gray-600">{formatDate(request.acceptedAt)}</p>
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="flex items-start gap-3">
+                      <div className="p-2 bg-gray-100 rounded-full">
+                        <FaClock className="text-gray-600 text-sm" />
+                      </div>
+                      <div>
+                        <p className="font-medium text-gray-900">Last Updated</p>
+                        <p className="text-sm text-gray-600">{formatDate(request.updatedAt)}</p>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
-            </motion.div>
+
+              {/* Right Column */}
+              <div className="space-y-6">
+                {/* Patient Details */}
+                <div className="bg-white border rounded-xl p-5">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="p-2 bg-green-100 rounded-lg">
+                      <FaUser className="text-green-600" />
+                    </div>
+                    <h2 className="text-lg font-bold text-gray-900">Patient Details</h2>
+                  </div>
+
+                  {request.patientId ? (
+                    <div className="space-y-4">
+                      <div className="flex items-start gap-3">
+                        <FaUser className="text-gray-400 mt-1" />
+                        <div>
+                          <p className="text-sm text-gray-600">Full Name</p>
+                          <p className="font-medium text-gray-900">{request.patientId.name}</p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-start gap-3">
+                        <FaEnvelope className="text-gray-400 mt-1" />
+                        <div>
+                          <p className="text-sm text-gray-600">Email</p>
+                          <p className="font-medium text-gray-900 break-all">{request.patientId.email}</p>
+                        </div>
+                      </div>
+
+                      {request.patientId.phone && (
+                        <div className="flex items-start gap-3">
+                          <FaPhone className="text-gray-400 mt-1" />
+                          <div>
+                            <p className="text-sm text-gray-600">Phone</p>
+                            <p className="font-medium text-gray-900">{request.patientId.phone}</p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <p className="text-gray-500 text-center py-4">Patient details not available</p>
+                  )}
+                </div>
+
+                {/* Additional Info */}
+                <div className="bg-white border rounded-xl p-5">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="p-2 bg-yellow-100 rounded-lg">
+                      <FaInfoCircle className="text-yellow-600" />
+                    </div>
+                    <h2 className="text-lg font-bold text-gray-900">Additional Information</h2>
+                  </div>
+
+                  <div className="space-y-4">
+                    {/* Donor Responses */}
+                    {request.donorResponses && request.donorResponses.length > 0 && (
+                      <div className="p-3 bg-blue-50 rounded-lg">
+                        <p className="text-sm font-medium text-blue-700 flex items-center gap-2">
+                          <FaUsers />
+                          Donor Responses: {request.donorResponses.length}
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Accepted By */}
+                    {request.acceptedBy && (
+                      <div className="p-3 bg-green-50 rounded-lg">
+                        <p className="text-sm font-medium text-green-700 flex items-center gap-2">
+                          <FaCheckCircle />
+                          Accepted By: {request.acceptedBy.name}
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Status Notes */}
+                    <div className={`p-3 rounded-lg ${statusInfo.badge.replace('border', 'bg').replace('300', '50')} border ${statusInfo.badge.split(' ')[2]}`}>
+                      <p className="text-sm">
+                        {request.status === 'pending' && 'Your request is being processed and donors are being notified.'}
+                        {request.status === 'accepted' && 'A donor has accepted your request and will contact you shortly.'}
+                        {request.status === 'completed' && 'This blood request has been successfully fulfilled.'}
+                        {request.status === 'rejected' && 'This request has been rejected.'}
+                        {request.status === 'cancelled' && 'This request has been cancelled.'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Bottom Action */}
+            <div className="mt-8 pt-6 border-t">
+              <button
+                onClick={() => navigate(-1)}
+                className="px-5 py-2.5 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium transition-colors"
+              >
+                Go Back to Dashboard
+              </button>
+            </div>
           </div>
-        </motion.div>
+        </div>
       </div>
-    </motion.div>
+    </div>
   );
 }

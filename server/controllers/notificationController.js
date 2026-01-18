@@ -1,90 +1,175 @@
+import Notification from "../models/notificationModel.js";
+import mongoose from "mongoose";
 
-import Notification from "../models/notificationModel.js"
-// ---------------- CREATE ----------------
-export const createNotification = async (req, res) => {
+/* --------------------------
+   GET MY NOTIFICATIONS
+--------------------------- */
+export const getMyNotifications = async (req, res) => {
   try {
-    const { title, message, patientId, donorId } = req.body;
+    const userId = req.user.id;
+    const { role } = req.query;
 
-    if (!title || !message) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Title & Message required" });
-    }
-
-    if (!patientId && !donorId) {
+    if (!role || !["patient", "donor"].includes(role)) {
       return res.status(400).json({
         success: false,
-        message: "Either patientId or donorId is required",
+        message: "Role is required (patient or donor)",
       });
     }
 
-    const notification = await Notification.create({
-      title,
-      message,
-      patientId: patientId || null,
-      donorId: donorId || null,
-    });
-
-    res.status(201).json({ success: true, notification });
-  } catch (error) {
-    console.log("Create Notification Error:", error);
-    res.status(500).json({ success: false, message: "Server Error" });
-  }
-};
-
-// ---------------- GET NOTIFICATIONS ----------------
-export const getNotifications = async (req, res) => {
-  try {
-    const { userId } = req.params;
-
     const notifications = await Notification.find({
-      $or: [{ patientId: userId }, { donorId: userId }],
-    }).sort({ createdAt: -1 });
+      user: userId,
+      forRole: role,
+    })
+      .populate("requestId", "bloodGroup city hospitalName status")
+      .sort({ createdAt: -1 });
 
-    res.json({ success: true, notifications });
-  } catch (error) {
-    console.log("Get Notifications Error:", error);
-    res.status(500).json({ success: false, message: "Server Error" });
+    res.status(200).json({
+      success: true,
+      count: notifications.length,
+      data: notifications,
+    });
+  } catch (err) {
+    console.error("getMyNotifications error:", err);
+    res.status(500).json({ success: false, message: "Server error" });
   }
 };
 
-// ---------------- MARK SINGLE READ ----------------
+/* --------------------------
+   MARK SINGLE AS READ
+--------------------------- */
 export const markAsRead = async (req, res) => {
   try {
-    await Notification.findByIdAndUpdate(req.params.id, { read: true });
-    res.json({ success: true });
-  } catch (error) {
-    console.log("Mark Read Error:", error);
-    res.status(500).json({ success: false, message: "Server Error" });
+    const { id } = req.params;
+    const userId = req.user.id;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid notification id",
+      });
+    }
+
+    const notification = await Notification.findOne({
+      _id: id,
+      user: userId,
+    });
+
+    if (!notification) {
+      return res.status(404).json({
+        success: false,
+        message: "Notification not found",
+      });
+    }
+
+    notification.isRead = true;
+    await notification.save();
+
+    res.json({
+      success: true,
+      message: "Notification marked as read",
+    });
+  } catch (err) {
+    console.error("markAsRead error:", err);
+    res.status(500).json({ success: false, message: "Server error" });
   }
 };
 
-// ---------------- MARK ALL READ ----------------
+/* --------------------------
+   MARK ALL AS READ
+   role = patient | donor
+--------------------------- */
 export const markAllAsRead = async (req, res) => {
   try {
-    const { userId } = req.params;
+    const userId = req.user.id;
+    const { role } = req.query;
+
+    if (!role || !["patient", "donor"].includes(role)) {
+      return res.status(400).json({
+        success: false,
+        message: "Role is required (patient or donor)",
+      });
+    }
 
     await Notification.updateMany(
-      {
-        $or: [{ patientId: userId }, { donorId: userId }],
-      },
-      { $set: { read: true } }
+      { user: userId, forRole: role, isRead: false },
+      { $set: { isRead: true } }
     );
 
-    res.json({ success: true });
-  } catch (error) {
-    console.log("Mark All Read Error:", error);
-    res.status(500).json({ success: false, message: "Server Error" });
+    res.json({
+      success: true,
+      message: "All notifications marked as read",
+    });
+  } catch (err) {
+    console.error("markAllAsRead error:", err);
+    res.status(500).json({ success: false, message: "Server error" });
   }
 };
 
-// ---------------- DELETE ----------------
+/* --------------------------
+   DELETE NOTIFICATION
+--------------------------- */
 export const deleteNotification = async (req, res) => {
   try {
-    await Notification.findByIdAndDelete(req.params.id);
-    res.json({ success: true });
-  } catch (error) {
-    console.log("Delete Error:", error);
-    res.status(500).json({ success: false, message: "Server Error" });
+    const { id } = req.params;
+    const userId = req.user.id;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid notification id",
+      });
+    }
+
+    const notification = await Notification.findOneAndDelete({
+      _id: id,
+      user: userId,
+    });
+
+    if (!notification) {
+      return res.status(404).json({
+        success: false,
+        message: "Notification not found",
+      });
+    }
+
+    res.json({
+      success: true,
+      message: "Notification deleted",
+    });
+  } catch (err) {
+    console.error("deleteNotification error:", err);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
+/* --------------------------
+   GET UNREAD COUNT
+   role = patient | donor
+--------------------------- */
+export const getUnreadCount = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { role } = req.query;
+
+    if (!role || !["patient", "donor"].includes(role)) {
+      return res.status(400).json({
+        success: false,
+        message: "Role is required (patient or donor)",
+      });
+    }
+
+    const count = await Notification.countDocuments({
+      user: userId,
+      forRole: role,
+      isRead: false,
+    });
+
+    res.json({
+      success: true,
+      count,
+    });
+  } catch (err) {
+    console.error("getUnreadCount error:", err);
+    res.status(500).json({ success: false, message: "Server error" });
   }
 };

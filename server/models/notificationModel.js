@@ -1,28 +1,48 @@
 import mongoose from "mongoose";
-
 const notificationSchema = new mongoose.Schema(
   {
-    title: { type: String, required: true },
-    message: { type: String, required: true },
-
-    // 🔥 Separate receivers (Both point to "User" now)
-    patientId: {
+    user: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
+      required: true,
+    },
+
+    forRole: {
+      type: String,
+      enum: ["patient", "donor"],
+      required: true,
+    },
+
+    title: String,
+    message: String,
+
+    type: {
+      type: String,
+      enum: [
+        "REQUEST_CREATED",
+        "REQUEST_ACCEPTED",
+        "REQUEST_CANCELLED"
+      ],
+      required: true,
+    },
+
+    requestId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Request",
+    },
+
+    reason: {
+      type: String,
       default: null,
     },
 
-    donorId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
-      default: null,
+    isRead: {
+      type: Boolean,
+      default: false,
     },
-
-    // Read/unread
-    read: { type: Boolean, default: false },
   },
   { timestamps: true }
 );
-
 const Notification = mongoose.model("Notification", notificationSchema);
+
 export default Notification;

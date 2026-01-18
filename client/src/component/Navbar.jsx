@@ -19,7 +19,7 @@ import {
 import { NavLink, useNavigate, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSelector, useDispatch } from "react-redux";
-import { logout } from "../features/auth/authSlice";
+import { logoutUser } from "../features/auth/authSlice";
 
 export default function Navbar() {
   const [toggle, setToggle] = useState(false);
@@ -28,12 +28,15 @@ export default function Navbar() {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const location = useLocation();
-  
+
   const dropdownRef = useRef(null);
   const mobileMenuRef = useRef(null);
   const toggleButtonRef = useRef(null);
 
-  const { isAuthenticated, user, role } = useSelector((s) => s.auth);
+  const { isAuthenticated, user } = useSelector((s) => s.auth);
+
+  // Get current role from user object - FIXED
+  const currentRole = user?.activeRole || (user?.role && user?.role[0]) || 'user';
 
   // Close dropdown and mobile menu on route change
   useEffect(() => {
@@ -48,13 +51,13 @@ export default function Navbar() {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setDropdownOpen(false);
       }
-      
+
       // Close mobile menu if clicked outside (except toggle button)
-      if (toggle && 
-          mobileMenuRef.current && 
-          !mobileMenuRef.current.contains(event.target) &&
-          toggleButtonRef.current && 
-          !toggleButtonRef.current.contains(event.target)) {
+      if (toggle &&
+        mobileMenuRef.current &&
+        !mobileMenuRef.current.contains(event.target) &&
+        toggleButtonRef.current &&
+        !toggleButtonRef.current.contains(event.target)) {
         setToggle(false);
       }
     };
@@ -102,7 +105,7 @@ export default function Navbar() {
   const handleLogout = () => {
     setToggle(false);
     setDropdownOpen(false);
-    dispatch(logout());
+    dispatch(logoutUser());
     navigate("/login", { replace: true });
   };
 
@@ -111,7 +114,7 @@ export default function Navbar() {
 
   // Role icon mapping
   const getRoleIcon = (role) => {
-    switch(role) {
+    switch (role) {
       case 'donor': return <FaHandHoldingHeart className="text-red-500" />;
       case 'patient': return <FaUserInjured className="text-blue-500" />;
       case 'admin': return <FaUserShield className="text-gray-600" />;
@@ -121,7 +124,7 @@ export default function Navbar() {
 
   // Role color mapping
   const getRoleColor = (role) => {
-    switch(role) {
+    switch (role) {
       case 'donor': return 'bg-red-100 text-red-700 border-red-200';
       case 'patient': return 'bg-blue-100 text-blue-700 border-blue-200';
       case 'admin': return 'bg-gray-100 text-gray-700 border-gray-200';
@@ -177,9 +180,9 @@ export default function Navbar() {
               { icon: <FaInstagram />, color: "hover:text-pink-300" },
               { icon: <FaYoutube />, color: "hover:text-red-300" }
             ].map((item, i) => (
-              <motion.a 
+              <motion.a
                 key={i}
-                href="#" 
+                href="#"
                 className={`text-white ${item.color} transition-colors duration-300`}
                 whileHover={{ scale: 1.2 }}
                 whileTap={{ scale: 0.95 }}
@@ -197,7 +200,7 @@ export default function Navbar() {
       <div className="bg-white border-b border-gray-100">
         <div className="max-w-[1200px] mx-auto flex justify-between items-center h-20 px-4 md:px-8">
           {/* LOGO */}
-          <motion.div 
+          <motion.div
             className="flex items-center gap-3 cursor-pointer"
             onClick={() => {
               navigate("/");
@@ -235,10 +238,9 @@ export default function Navbar() {
                 to={item.to}
                 onClick={() => setDropdownOpen(false)}
                 className={({ isActive }) =>
-                  `px-1 py-2 text-sm font-medium transition-all duration-300 ${
-                    isActive
-                      ? "text-red-600 border-b-2 border-red-600"
-                      : "text-gray-600 hover:text-red-600 hover:border-b-2 hover:border-red-300"
+                  `px-1 py-2 text-sm font-medium transition-all duration-300 ${isActive
+                    ? "text-red-600 border-b-2 border-red-600"
+                    : "text-gray-600 hover:text-red-600 hover:border-b-2 hover:border-red-300"
                   }`
                 }
               >
@@ -253,15 +255,15 @@ export default function Navbar() {
               <div className="flex items-center gap-4">
                 {/* User Info */}
                 <div className="flex items-center gap-3">
-                  <div className={`p-2 rounded-full border ${getRoleColor(role)}`}>
-                    {getRoleIcon(role)}
+                  <div className={`p-2 rounded-full border ${getRoleColor(currentRole)}`}>
+                    {getRoleIcon(currentRole)}
                   </div>
                   <div className="text-right">
                     <p className="text-sm font-semibold text-gray-800">{user?.name}</p>
-                    <p className="text-xs text-gray-500 capitalize">{role}</p>
+                    <p className="text-xs text-gray-500 capitalize">{currentRole}</p>
                   </div>
                 </div>
-                
+
                 {/* Dropdown Trigger */}
                 <motion.button
                   onClick={handleDropdownToggle}
@@ -271,10 +273,10 @@ export default function Navbar() {
                   aria-label="Toggle user menu"
                   aria-expanded={dropdownOpen}
                 >
-                  <svg 
-                    className={`w-4 h-4 text-gray-600 transition-transform duration-300 ${dropdownOpen ? 'rotate-180' : ''}`} 
-                    fill="none" 
-                    stroke="currentColor" 
+                  <svg
+                    className={`w-4 h-4 text-gray-600 transition-transform duration-300 ${dropdownOpen ? 'rotate-180' : ''}`}
+                    fill="none"
+                    stroke="currentColor"
                     viewBox="0 0 24 24"
                   >
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -296,14 +298,14 @@ export default function Navbar() {
                       {/* User Info Card */}
                       <div className="px-4 py-3 bg-gradient-to-r from-red-50 to-pink-50 border-b border-gray-100">
                         <div className="flex items-center gap-3">
-                          <div className={`p-2 rounded-lg border ${getRoleColor(role)}`}>
-                            {getRoleIcon(role)}
+                          <div className={`p-2 rounded-lg border ${getRoleColor(currentRole)}`}>
+                            {getRoleIcon(currentRole)}
                           </div>
                           <div>
                             <p className="font-semibold text-gray-800">{user?.name}</p>
                             <div className="flex items-center gap-2 mt-1">
-                              <span className={`px-2 py-0.5 text-xs rounded-full ${getRoleColor(role)}`}>
-                                {role}
+                              <span className={`px-2 py-0.5 text-xs rounded-full ${getRoleColor(currentRole)}`}>
+                                {currentRole}
                               </span>
                               <span className="text-xs text-gray-500">{user?.bloodGroup}</span>
                             </div>
@@ -314,7 +316,7 @@ export default function Navbar() {
                       {/* Menu Items */}
                       <div className="py-2">
                         <NavLink
-                          to={`/${role}/dashboard`}
+                          to={`/${currentRole}/dashboard`}
                           onClick={() => setDropdownOpen(false)}
                           className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors"
                           role="menuitem"
@@ -406,7 +408,7 @@ export default function Navbar() {
                   {[
                     { to: "/", label: "Home" },
                     { to: "/donors", label: "Find Donors" },
-                    { to: "/camps", label: "Blood Camps" },
+                    { to: "/care", label: "Blood Care" },
                     { to: "/services", label: "Services" },
                     { to: "/contact", label: "Contact" },
                   ].map((item) => (
@@ -415,10 +417,9 @@ export default function Navbar() {
                       to={item.to}
                       onClick={handleMobileLinkClick}
                       className={({ isActive }) =>
-                        `block px-4 py-3 rounded-lg font-medium transition-colors ${
-                          isActive
-                            ? "bg-red-50 text-red-600 border-l-4 border-red-600"
-                            : "text-gray-700 hover:bg-gray-50"
+                        `block px-4 py-3 rounded-lg font-medium transition-colors ${isActive
+                          ? "bg-red-50 text-red-600 border-l-4 border-red-600"
+                          : "text-gray-700 hover:bg-gray-50"
                         }`
                       }
                     >
@@ -431,14 +432,14 @@ export default function Navbar() {
                 {isAuthenticated ? (
                   <div className="pt-4 border-t border-gray-100">
                     <div className="flex items-center gap-3 px-4 py-3 bg-gradient-to-r from-red-50 to-pink-50 rounded-lg">
-                      <div className={`p-2 rounded-full border ${getRoleColor(role)}`}>
-                        {getRoleIcon(role)}
+                      <div className={`p-2 rounded-full border ${getRoleColor(currentRole)}`}>
+                        {getRoleIcon(currentRole)}
                       </div>
                       <div>
                         <p className="font-semibold text-gray-800">{user?.name}</p>
                         <div className="flex items-center gap-2 mt-1">
-                          <span className={`px-2 py-0.5 text-xs rounded-full ${getRoleColor(role)}`}>
-                            {role}
+                          <span className={`px-2 py-0.5 text-xs rounded-full ${getRoleColor(currentRole)}`}>
+                            {currentRole}
                           </span>
                           <span className="text-xs text-gray-500">{user?.bloodGroup}</span>
                         </div>
@@ -447,7 +448,7 @@ export default function Navbar() {
 
                     <div className="mt-3 space-y-2">
                       <NavLink
-                        to={`/${role}/dashboard`}
+                        to={`/${currentRole}/dashboard`}
                         onClick={handleMobileLinkClick}
                         className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-gray-50 transition-colors"
                       >

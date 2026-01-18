@@ -99,7 +99,7 @@ const FlashMessage = ({ type = "error", message, onClose }) => {
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: -20, scale: 0.9 }}
                 transition={{ duration: 0.25, ease: "easeOut" }}
-                className={`fixed top-8 left-1/2 -translate-x-1/2 min-w-[330px] max-w-[90%] px-6 py-4 text-white rounded-2xl shadow-2xl border border-white/20 flex items-center gap-4 ${style.bg} z-50 backdrop-blur-xl`}
+                className={` fixed top-8 left-1/2 -translate-x-1/2 min-w-[330px] max-w-[90%] px-6 py-4 text-white rounded-2xl shadow-2xl border border-white/20 flex items-center gap-4 ${style.bg} z-50 backdrop-blur-xl`}
             >
                 <span className="text-white drop-shadow-lg">{style.icon}</span>
 

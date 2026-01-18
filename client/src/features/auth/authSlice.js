@@ -1,4 +1,5 @@
 import { createSlice } from "@reduxjs/toolkit";
+import { bloodApi } from "../api/bloodApi"; // RTK Query API import karo
 
 const safeParse = (value) => {
     try {
@@ -12,41 +13,52 @@ const authSlice = createSlice({
     name: "auth",
     initialState: {
         token: localStorage.getItem("token") || null,
-        role: localStorage.getItem("role") || null,
         user: safeParse(localStorage.getItem("user")) || null,
-        isAuthenticated: !!localStorage.getItem("token"),  // <-- ADD THIS
+        isAuthenticated: !!localStorage.getItem("token"),
     },
-
 
     reducers: {
         setCredentials: (state, action) => {
-            const { token, role, user } = action.payload;
+            const { token, user } = action.payload;
 
             state.token = token;
-            state.role = role;
             state.user = user;
             state.isAuthenticated = true;
 
             localStorage.setItem("token", token);
-            localStorage.setItem("role", role);
             localStorage.setItem("user", JSON.stringify(user));
         },
 
-
         logout: (state) => {
             state.token = null;
-            state.role = null;
             state.user = null;
             state.isAuthenticated = false;
 
             localStorage.removeItem("token");
-            localStorage.removeItem("role");
             localStorage.removeItem("user");
+            localStorage.removeItem("role");
         },
 
+        updateUser: (state, action) => {
+            if (state.user) {
+                state.user = { ...state.user, ...action.payload };
+                localStorage.setItem("user", JSON.stringify(state.user));
+            }
+        }
     },
 });
 
+export const { setCredentials, updateUser } = authSlice.actions;
+export const logoutUser = () => (dispatch) => {
+    dispatch(bloodApi.util.resetApiState());
+    dispatch(authSlice.actions.logout());
+    localStorage.clear();
+    sessionStorage.clear();
+    document.cookie.split(";").forEach(cookie => {
+        const eqPos = cookie.indexOf("=");
+        const name = eqPos > -1 ? cookie.substr(0, eqPos) : cookie;
+        document.cookie = name + "=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/";
+    });
+};
 
-export const { setCredentials, logout } = authSlice.actions;
 export default authSlice.reducer;

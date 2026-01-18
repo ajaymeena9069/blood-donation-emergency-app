@@ -8,10 +8,8 @@ export const bloodApi = createApi({
         baseUrl: "http://localhost:5000/api",
         credentials: "include",
         prepareHeaders: (headers, { getState }) => {
-            // FIX: Check both localStorage AND Redux store for token
             let token = localStorage.getItem("token");
 
-            // If token not in localStorage, try to get from Redux store
             if (!token) {
                 const state = getState();
                 token = state.auth?.token;
@@ -20,6 +18,7 @@ export const bloodApi = createApi({
             if (token) {
                 headers.set("authorization", `Bearer ${token}`);
             }
+
             return headers;
         },
     }),
@@ -27,79 +26,70 @@ export const bloodApi = createApi({
     tagTypes: [
         "Request",
         "Notifications",
-        "DonorNotifications",
         "DonorMatches",
-        "Donor",
         "Donors",
+        "Donor",
         "Profile",
-        "User"
+        "User",
     ],
 
     endpoints: (builder) => ({
-
-        /* ------------------------------------------------------------------
-            USER AUTH
-        ------------------------------------------------------------------ */
+        /* -------------------- AUTH -------------------- */
 
         registerUser: builder.mutation({
             query: (data) => ({
-                url: '/auth/register',
-                method: 'POST',
-                body: data
+                url: "/auth/register",
+                method: "POST",
+                body: data,
             }),
-            invalidatesTags: ['Donors']
         }),
 
         loginUser: builder.mutation({
             query: (data) => ({
                 url: "/auth/login",
                 method: "POST",
-                body: data
+                body: data,
             }),
-            invalidatesTags: ['Donors']
         }),
 
         getProfile: builder.query({
-            query: () => ({
-                url: '/user/profile',
-                method: 'GET'
-            }),
-            providesTags: ['Profile', 'User'],
+            query: () => "/user/profile",
+            providesTags: ["Profile", "User"],
         }),
 
         updateUser: builder.mutation({
             query: (data) => ({
-                url: '/user/profile',
-                method: 'PUT',
+                url: "/user/profile",
+                method: "PUT",
                 body: data,
             }),
-            invalidatesTags: ['Profile', 'User'], // FIX: Added 'User' tag
+            invalidatesTags: ["Profile", "User"],
         }),
 
+        // SIMPLE ROLE ACTIVATION
         activateRole: builder.mutation({
-            query: ({ roleToActivate }) => ({
-                url: '/user/activate-role',
-                method: 'POST',
+            query: (roleToActivate) => ({
+                url: "/user/activate-role",
+                method: "POST",
                 body: { roleToActivate },
             }),
-            // FIX: Added cache update logic for role activation
-            invalidatesTags: ['User', 'Profile'], // Invalidate user and profile data
-            onQueryStarted: async (arg, { dispatch, queryFulfilled }) => {
+            invalidatesTags: ["Profile", "User"],
+            async onQueryStarted(roleToActivate, { dispatch, queryFulfilled }) {
                 try {
                     const { data } = await queryFulfilled;
-                    if (data.success && data.data?.token) {
-                        // Update token in localStorage
-                        localStorage.setItem('token', data.data.token);
+                    if (data?.data?.token) {
+                        localStorage.setItem("token", data.data.token);
                     }
-                } catch (error) {
-                    console.error('Failed to update token after role activation:', error);
+                    // Refresh user data
+                    dispatch(bloodApi.util.invalidateTags(['User', 'Profile']));
+                } catch (err) {
+                    console.error("Role activation failed", err);
                 }
             },
         }),
 
-        /* ------------------------------------------------------------------
-            PATIENT REQUESTS
-        ------------------------------------------------------------------ */
+        /* -------------------- PATIENT REQUESTS -------------------- */
+
         createRequest: builder.mutation({
             query: (data) => ({
                 url: "/request/create",
@@ -110,7 +100,7 @@ export const bloodApi = createApi({
         }),
 
         getPatientRequests: builder.query({
-            query: (patientId) => `/request/patient/${patientId}/requests`,
+            query: (patientID) => `/request/patient/${patientID}/requests`,
             providesTags: ["Request"],
         }),
 
@@ -119,28 +109,27 @@ export const bloodApi = createApi({
             providesTags: ["Request"],
         }),
 
-        /* ------------------------------------------------------------------
-            DONOR AUTH
-        ------------------------------------------------------------------ */
-        registerDonor: builder.mutation({
-            query: (data) => ({
-                url: "/donor/register",
-                method: "POST",
-                body: data,
+        deleteRequest: builder.mutation({
+            query: (id) => ({
+                url: `/request/${id}`,
+                method: "DELETE"
             }),
+            invalidatesTags: ['Request', 'DonorMatches']
         }),
 
-        loginDonor: builder.mutation({
-            query: (data) => ({
-                url: "/donor/login",
-                method: "POST",
-                body: data,
-            }),
+        updateRequest: builder.mutation({
+            query: ({ id, ...data }) => ({
+                url: `request/${id}`, // YEH CHECK KARO
+                method: 'PUT',
+                body: data
+            })
         }),
+
+        /* -------------------- DONORS -------------------- */
 
         getAllDonors: builder.query({
             query: () => "/donor/all",
-            providesTags: ["Donors"]
+            providesTags: ["Donors"],
         }),
 
         updateAvailability: builder.mutation({
@@ -152,12 +141,28 @@ export const bloodApi = createApi({
             invalidatesTags: ["Donor"],
         }),
 
-        /* ------------------------------------------------------------------
-            DONOR MATCHED REQUESTS
-        ------------------------------------------------------------------ */
+        acceptRequest: builder.mutation({
+            query: (id) => ({
+                url: `/request/${id}/accept`,
+                method: "POST",
+            }),
+            invalidatesTags: ["Request"],
+        }),
+
+        cancelRequest: builder.mutation({
+            query: ({ id, reason }) => ({
+                url: `/request/${id}/cancel`,
+                method: "POST",
+                body: { reason },
+            }),
+            invalidatesTags: ["Request"],
+        }),
+
+        /* -------------------- DONOR MATCHES -------------------- */
+
         getDonorMatches: builder.query({
             query: () => "/request/donor/matches",
-            providesTags: ["DonorMatches"],
+            providesTags: ["DonorMatches", "Request"],
         }),
 
         donorRespond: builder.mutation({
@@ -166,68 +171,11 @@ export const bloodApi = createApi({
                 method: "PUT",
                 body: { action },
             }),
-            invalidatesTags: ["Request", "DonorNotifications", "DonorMatches"],
+            invalidatesTags: ["Request", "DonorMatches"],
         }),
 
-        updateRequestStatus: builder.mutation({
-            query: ({ id, action }) => ({
-                url: `/request/donor/respond/${id}`,
-                method: "PUT",
-                body: { action }
-            }),
-            invalidatesTags: ["DonorMatches"],
-        }),
+        /* -------------------- ADMIN -------------------- */
 
-        /* ------------------------------------------------------------------
-            NOTIFICATIONS
-        ------------------------------------------------------------------ */
-
-        // Patient notifications
-        getNotifications: builder.query({
-            query: (userId) => `/notifications/${userId}`,
-            providesTags: ["Notifications"],
-        }),
-
-        // CREATE NOTIFICATION (works for both patient & donor)
-        createNotification: builder.mutation({
-            query: (data) => ({
-                url: `/notifications`,
-                method: "POST",
-                body: data,
-            }),
-            invalidatesTags: ["Notifications", "DonorNotifications"],
-        }),
-
-        // MARK SINGLE READ
-        markAsRead: builder.mutation({
-            query: (id) => ({
-                url: `/notifications/read/${id}`,
-                method: "PUT",
-            }),
-            invalidatesTags: ["Notifications", "DonorNotifications"],
-        }),
-
-        // MARK ALL READ
-        markAllAsRead: builder.mutation({
-            query: (userId) => ({
-                url: `/notifications/read-all/${userId}`,
-                method: "PUT",
-            }),
-            invalidatesTags: ["Notifications", "DonorNotifications"],
-        }),
-
-        // DELETE
-        deleteNotification: builder.mutation({
-            query: (id) => ({
-                url: `/notifications/delete/${id}`,
-                method: "DELETE",
-            }),
-            invalidatesTags: ["Notifications", "DonorNotifications"],
-        }),
-
-        /* ------------------------------------------------------------------
-            ADMIN
-        ------------------------------------------------------------------ */
         loginAdmin: builder.mutation({
             query: (data) => ({
                 url: "/admin/login",
@@ -250,43 +198,91 @@ export const bloodApi = createApi({
             invalidatesTags: ["Request"],
         }),
 
+        //GET MY NOTIFICATIONS
+        // bloodApi.js - Correct the endpoints:
+
+        getMyNotifications: builder.query({
+            query: (role) => `/notifications?role=${role}`,
+            providesTags: (result, error, role) =>
+                result?.data
+                    ? [
+                        ...result.data.map((n) => ({
+                            type: "Notification",
+                            id: n._id,
+                        })),
+                        { type: "Notification", id: `LIST-${role}` },
+                    ]
+                    : [{ type: "Notification", id: `LIST-${role}` }],
+        }),
+
+        getUnreadNotificationCount: builder.query({
+            query: (role) => `/notifications/unread-count?role=${role}`,
+            providesTags: [{ type: "Notification", id: "UNREAD_COUNT" }],
+        }),
+
+        markNotificationAsRead: builder.mutation({
+            query: ({ notificationId }) => ({
+                url: `/notifications/${notificationId}/read`,
+                method: "PATCH",
+            }),
+            invalidatesTags: (result, error, { notificationId }) => [
+                { type: "Notification", id: notificationId },
+                { type: "Notification", id: "UNREAD_COUNT" },
+            ],
+        }),
+
+        markAllNotificationsAsRead: builder.mutation({
+            query: (role) => ({
+                url: `/notifications/read-all?role=${role}`,
+                method: "PATCH",
+            }),
+            invalidatesTags: [
+                { type: "Notification", id: "LIST" },
+                { type: "Notification", id: "UNREAD_COUNT" },
+            ],
+        }),
+
+        deleteNotification: builder.mutation({
+            query: ({ notificationId }) => ({
+                url: `/notifications/${notificationId}`,
+                method: "DELETE",
+            }),
+            invalidatesTags: (result, error, { notificationId }) => [
+                { type: "Notification", id: notificationId },
+                { type: "Notification", id: "LIST" },
+                { type: "Notification", id: "UNREAD_COUNT" },
+            ],
+        }),
     }),
 });
 
-/* ------------------------------------------------------------------
-   EXPORTED HOOKS
------------------------------------------------------------------- */
 export const {
-    // User Auth
     useRegisterUserMutation,
     useLoginUserMutation,
     useGetProfileQuery,
     useUpdateUserMutation,
     useActivateRoleMutation,
 
-    // Patient Requests
     useCreateRequestMutation,
     useGetPatientRequestsQuery,
     useGetSingleRequestQuery,
+    useAcceptRequestMutation,
+    useCancelRequestMutation,
+    useDeleteRequestMutation,
+    useUpdateRequestMutation,
 
-    // Donor
-    useRegisterDonorMutation,
-    useLoginDonorMutation,
     useGetAllDonorsQuery,
-    useGetDonorMatchesQuery,
-    useDonorRespondMutation,
-    useUpdateRequestStatusMutation,
     useUpdateAvailabilityMutation,
 
-    // Notifications
-    useGetNotificationsQuery,
-    useGetDonorNotificationsQuery,
-    useCreateNotificationMutation,
-    useMarkAsReadMutation,
-    useMarkAllAsReadMutation,
+    useGetDonorMatchesQuery,
+    useDonorRespondMutation,
+
+    useGetMyNotificationsQuery,
+    useGetUnreadNotificationCountQuery,
+    useMarkNotificationAsReadMutation,
+    useMarkAllNotificationsAsReadMutation,
     useDeleteNotificationMutation,
 
-    // Admin
     useLoginAdminMutation,
     useAdminGetAllRequestsQuery,
     useAdminUpdateRequestStatusMutation,
