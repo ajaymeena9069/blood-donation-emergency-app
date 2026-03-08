@@ -5,7 +5,7 @@ export const bloodApi = createApi({
     reducerPath: "bloodApi",
 
     baseQuery: fetchBaseQuery({
-        baseUrl: "http://localhost:5000/api",
+        baseUrl: import.meta.env.VITE_API_URL || "http://localhost:5000/api",
         credentials: "include",
         prepareHeaders: (headers, { getState }) => {
             let token = localStorage.getItem("token");
