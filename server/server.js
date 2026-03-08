@@ -12,6 +12,7 @@ import adminRoutes from "./routes/adminRoutes.js";
 import notificationRoutes from "./routes/notification.routes.js";
 import authRoutes from "./routes/authRoutes.js";
 import userRoutes from "./routes/userRoutes.js";
+import statsRoutes from "./routes/statsRoutes.js";
 
 connectDb();
 
@@ -34,6 +35,7 @@ app.use('/api/patient', patientRoutes);
 app.use('/api/request', requestRoute);
 app.use('/api/admin', adminRoutes);
 app.use("/api/notifications", notificationRoutes);
+app.use('/api/stats', statsRoutes);
 
 // default route...
 app.get('/', (req, res) => {

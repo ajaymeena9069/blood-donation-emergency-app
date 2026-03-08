@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useNavigate } from "react-router-dom";
 import {
   FaUser,
   FaEnvelope,
@@ -11,17 +12,19 @@ import {
   FaVenusMars,
   FaEdit,
   FaSave,
-  FaUserCircle
+  FaUserCircle,
+  FaArrowLeft
 } from "react-icons/fa";
 import { useGetProfileQuery, useUpdateUserMutation } from "../features/api/bloodApi";
-import { registerSchema } from "../../../common/validators/user.validator.js";
+import { registerSchema } from "../validators/user.validator.js";
 
 const updateProfileSchema = registerSchema.partial().omit({ email: true, password: true });
 
 export default function MyProfile() {
+  const navigate = useNavigate();
   const [isEditing, setIsEditing] = useState(false);
   const { data: userProfile, isLoading: profileLoading } = useGetProfileQuery();
-  const user = userProfile?.user;
+  const user = userProfile?.data;
   const [updateUser, { isLoading: isUpdating }] = useUpdateUserMutation();
 
   const {
@@ -75,6 +78,15 @@ export default function MyProfile() {
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">
+      {/* Back Button */}
+      <button
+        onClick={() => navigate(-1)}
+        className="flex items-center gap-2 text-gray-600 hover:text-gray-800 mb-6 font-medium"
+      >
+        <FaArrowLeft />
+        Back to Dashboard
+      </button>
+
       {/* Header */}
       <div className="mb-8 text-center">
         <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">

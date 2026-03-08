@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import {
   FaPhoneAlt,
   FaMapMarkerAlt,
@@ -16,16 +16,24 @@ import {
 } from "react-icons/fa";
 import { useGetAllDonorsQuery } from "../features/api/bloodApi";
 import { useSelector } from "react-redux";
-import { NavLink } from "react-router-dom";
+import { NavLink, useSearchParams } from "react-router-dom";
 
 const BLOOD_GROUPS = ["All", "A+", "A-", "B+", "B-", "O+", "O-", "AB+", "AB-"];
 const CITIES = ["All"]; // You can populate this from your data
 
 export default function FindDonor() {
+  const [searchParams] = useSearchParams();
   const [search, setSearch] = useState("");
   const [bloodGroup, setBloodGroup] = useState("All");
   const [city, setCity] = useState("All");
   const [onlyAvailable, setOnlyAvailable] = useState(false);
+
+  useEffect(() => {
+    const bgParam = searchParams.get('bloodGroup');
+    const cityParam = searchParams.get('city');
+    if (bgParam) setBloodGroup(bgParam);
+    if (cityParam) setCity(cityParam);
+  }, [searchParams]);
 
   const { data, isLoading } = useGetAllDonorsQuery();
   const { user, token } = useSelector((state) => state.auth);
@@ -62,8 +70,8 @@ export default function FindDonor() {
         d.city?.toLowerCase().includes(q) ||
         d.bloodGroup?.toLowerCase().includes(q);
 
-      const matchesBG = bloodGroup === "All" || d.bloodGroup === bloodGroup;
-      const matchesCity = city === "All" || d.city === city;
+      const matchesBG = bloodGroup === "All" || d.bloodGroup?.trim() === bloodGroup.trim();
+      const matchesCity = city === "All" || d.city?.trim() === city.trim();
       const matchesAvail = !onlyAvailable || d.available === true;
 
       return matchesSearch && matchesBG && matchesCity && matchesAvail;

@@ -1,16 +1,16 @@
-// routes/userRoutes.js
 import express from "express";
 import {
     getProfile,
     updateProfile,
-    activateRole
+    activateRole,
+    resetDonorTimer
 } from "../controllers/userController.js";
 import { verifyToken } from "../middlewares/auth.js";
 import { validate } from "../middlewares/validate.js";
 import {
     updateProfileSchema,
     activateRoleSchema
-} from "../../common/validators/user.validator.js";
+} from "../validators/user.validator.js";
 
 const router = express.Router();
 
@@ -21,5 +21,6 @@ router.use(verifyToken);
 router.get("/profile", getProfile);
 router.put("/profile", validate(updateProfileSchema), updateProfile);
 router.post("/activate-role", validate(activateRoleSchema), activateRole);
+router.post("/reset-timer", resetDonorTimer);
 
 export default router;

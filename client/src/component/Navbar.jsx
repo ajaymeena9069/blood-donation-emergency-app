@@ -136,6 +136,7 @@ export default function Navbar() {
   const handleMobileLinkClick = () => {
     setToggle(false);
     setDropdownOpen(false);
+    window.scrollTo({ top: 0, behavior: 'instant' });
   };
 
   // Handle dropdown toggle with debounce
@@ -236,7 +237,10 @@ export default function Navbar() {
               <NavLink
                 key={item.to}
                 to={item.to}
-                onClick={() => setDropdownOpen(false)}
+                onClick={() => {
+                  setDropdownOpen(false);
+                  window.scrollTo({ top: 0, behavior: 'instant' });
+                }}
                 className={({ isActive }) =>
                   `px-1 py-2 text-sm font-medium transition-all duration-300 ${isActive
                     ? "text-red-600 border-b-2 border-red-600"
@@ -260,7 +264,7 @@ export default function Navbar() {
                   </div>
                   <div className="text-right">
                     <p className="text-sm font-semibold text-gray-800">{user?.name}</p>
-                    <p className="text-xs text-gray-500 capitalize">{currentRole}</p>
+                    <p className="text-xs text-gray-500 capitalize">{user?.role?.join(', ') || currentRole}</p>
                   </div>
                 </div>
 
@@ -305,7 +309,7 @@ export default function Navbar() {
                             <p className="font-semibold text-gray-800">{user?.name}</p>
                             <div className="flex items-center gap-2 mt-1">
                               <span className={`px-2 py-0.5 text-xs rounded-full ${getRoleColor(currentRole)}`}>
-                                {currentRole}
+                                {user?.role?.join(', ') || currentRole}
                               </span>
                               <span className="text-xs text-gray-500">{user?.bloodGroup}</span>
                             </div>
@@ -317,7 +321,10 @@ export default function Navbar() {
                       <div className="py-2">
                         <NavLink
                           to={`/${currentRole}/dashboard`}
-                          onClick={() => setDropdownOpen(false)}
+                          onClick={() => {
+                            setDropdownOpen(false);
+                            window.scrollTo({ top: 0, behavior: 'instant' });
+                          }}
                           className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors"
                           role="menuitem"
                         >
@@ -327,7 +334,10 @@ export default function Navbar() {
 
                         <NavLink
                           to="/profile"
-                          onClick={() => setDropdownOpen(false)}
+                          onClick={() => {
+                            setDropdownOpen(false);
+                            window.scrollTo({ top: 0, behavior: 'instant' });
+                          }}
                           className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors"
                           role="menuitem"
                         >
@@ -439,7 +449,7 @@ export default function Navbar() {
                         <p className="font-semibold text-gray-800">{user?.name}</p>
                         <div className="flex items-center gap-2 mt-1">
                           <span className={`px-2 py-0.5 text-xs rounded-full ${getRoleColor(currentRole)}`}>
-                            {currentRole}
+                            {user?.role?.join(', ') || currentRole}
                           </span>
                           <span className="text-xs text-gray-500">{user?.bloodGroup}</span>
                         </div>
@@ -449,7 +459,10 @@ export default function Navbar() {
                     <div className="mt-3 space-y-2">
                       <NavLink
                         to={`/${currentRole}/dashboard`}
-                        onClick={handleMobileLinkClick}
+                        onClick={() => {
+                          handleMobileLinkClick();
+                          window.scrollTo({ top: 0, behavior: 'instant' });
+                        }}
                         className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-gray-50 transition-colors"
                       >
                         <FaTachometerAlt className="text-gray-500" />
@@ -458,7 +471,10 @@ export default function Navbar() {
 
                       <NavLink
                         to="/profile"
-                        onClick={handleMobileLinkClick}
+                        onClick={() => {
+                          handleMobileLinkClick();
+                          window.scrollTo({ top: 0, behavior: 'instant' });
+                        }}
                         className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-gray-50 transition-colors"
                       >
                         <FaUserCircle className="text-gray-500" />

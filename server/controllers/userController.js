@@ -2,11 +2,13 @@ import User from "../models/userModel.js";
 import argon2 from "argon2";
 import jwt from "jsonwebtoken";
 import { JWT_SECRET } from "../config/env.js";
+import crypto from "crypto";
+import { sendPasswordResetEmail } from "../utils/emailService.js";
 
 // Register User
 export const registerUser = async (req, res) => {
     try {
-        const { name, email, password, phone, bloodGroup, city, age, gender, roleType } = req.body;
+        const { name, email, password, phone, bloodGroup, city, age, gender, roleType, available } = req.body;
 
         const existingUser = await User.findOne({ email });
         if (existingUser) {
@@ -26,7 +28,9 @@ export const registerUser = async (req, res) => {
             city,
             age,
             gender,
-            role: [roleType]
+            role: [roleType],
+            activeRole: roleType,
+            available: roleType === 'donor' ? (available !== undefined ? available : true) : false
         });
 
         await newUser.save();
@@ -83,12 +87,25 @@ export const loginUser = async (req, res) => {
             });
         }
 
+        if (user.status === "blocked") {
+            return res.status(403).json({
+                success: false,
+                message: "Your account has been blocked by admin. Please contact support.",
+                blocked: true
+            });
+        }
+
         const isMatch = await argon2.verify(user.password, password);
         if (!isMatch) {
             return res.status(400).json({
                 success: false,
                 message: "Invalid credentials!"
             });
+        }
+
+        if (!user.activeRole) {
+            user.activeRole = user.role.includes('admin') ? 'admin' : user.role[0];
+            await user.save();
         }
 
         const token = jwt.sign(
@@ -111,7 +128,8 @@ export const loginUser = async (req, res) => {
                 age: user.age,
                 gender: user.gender,
                 available: user.available,
-                role: user.role
+                role: user.role,
+                activeRole: user.activeRole
             }
         });
     } catch (error) {
@@ -183,7 +201,7 @@ export const getProfile = async (req, res) => {
 
         res.json({
             success: true,
-            user
+            data: user
         });
     } catch (error) {
         console.error("Get profile error:", error);
@@ -199,7 +217,7 @@ export const updateProfile = async (req, res) => {
         const updateData = { ...req.body };
 
         if ('available' in updateData) {
-            const user = await User.findById(req.user.id); // FIXED: Added await
+            const user = await User.findById(req.user.id);
 
             if (!user) {
                 return res.status(404).json({
@@ -255,5 +273,120 @@ export const updateProfile = async (req, res) => {
             success: false,
             message: "Server error"
         });
+    }
+};
+
+export const resetDonorTimer = async (req, res) => {
+    try {
+        const user = await User.findById(req.user.id);
+
+        if (!user) {
+            return res.status(404).json({ success: false, message: "User not found" });
+        }
+
+        if (!user.role.includes("donor")) {
+            return res.status(400).json({ success: false, message: "Only donors can reset timer" });
+        }
+
+        user.available = true;
+        user.nextEligibleDate = null;
+        user.status = "active";
+        await user.save();
+
+        res.json({
+            success: true,
+            message: "Timer reset successfully",
+            user: { available: user.available, nextEligibleDate: user.nextEligibleDate }
+        });
+    } catch (error) {
+        console.error("Reset timer error:", error);
+        res.status(500).json({ success: false, message: "Server error" });
+    }
+};
+
+export const forgotPassword = async (req, res) => {
+    try {
+        const { email } = req.body;
+
+        const user = await User.findOne({ email });
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: "No account found with this email"
+            });
+        }
+
+        // Generate reset token
+        const resetToken = crypto.randomBytes(32).toString('hex');
+        const resetTokenHash = crypto.createHash('sha256').update(resetToken).digest('hex');
+
+        user.resetPasswordToken = resetTokenHash;
+        user.resetPasswordExpire = Date.now() + 30 * 60 * 1000; // 30 minutes
+        await user.save();
+
+        // Send email
+        const resetUrl = `${process.env.CLIENT_URL || 'http://localhost:5173'}/reset-password/${resetToken}`;
+        
+        try {
+            await sendPasswordResetEmail(user.email, user.name, resetUrl);
+            res.json({
+                success: true,
+                message: "Password reset link sent to your email"
+            });
+        } catch (emailError) {
+            user.resetPasswordToken = undefined;
+            user.resetPasswordExpire = undefined;
+            await user.save();
+            
+            return res.status(500).json({
+                success: false,
+                message: "Failed to send email. Please try again."
+            });
+        }
+    } catch (error) {
+        console.error("Forgot password error:", error);
+        res.status(500).json({ success: false, message: "Server error" });
+    }
+};
+
+export const resetPassword = async (req, res) => {
+    try {
+        const { token } = req.params;
+        const { password } = req.body;
+
+        if (!password || password.length < 6) {
+            return res.status(400).json({
+                success: false,
+                message: "Password must be at least 6 characters"
+            });
+        }
+
+        const resetTokenHash = crypto.createHash('sha256').update(token).digest('hex');
+
+        const user = await User.findOne({
+            resetPasswordToken: resetTokenHash,
+            resetPasswordExpire: { $gt: Date.now() }
+        });
+
+        if (!user) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid or expired reset token"
+            });
+        }
+
+        // Update password
+        user.password = await argon2.hash(password);
+        user.resetPasswordToken = undefined;
+        user.resetPasswordExpire = undefined;
+        await user.save();
+
+        res.json({
+            success: true,
+            message: "Password reset successful! You can now login."
+        });
+    } catch (error) {
+        console.error("Reset password error:", error);
+        res.status(500).json({ success: false, message: "Server error" });
     }
 };

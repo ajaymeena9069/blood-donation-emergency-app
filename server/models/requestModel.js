@@ -35,12 +35,16 @@ const requestSchema = new mongoose.Schema(
       default: null,
     },
     acceptedAt: Date,
+    completedAt: Date,
 
     status: {
       type: String,
-      enum: ["pending", "accepted", "completed"],
+      enum: ["pending", "accepted", "completed", "rejected"],
       default: "pending",
     },
+
+    rejectionReason: String,
+    rejectedAt: Date,
 
     donorResponses: [donorResponseSchema],
     cancellationHistory: [

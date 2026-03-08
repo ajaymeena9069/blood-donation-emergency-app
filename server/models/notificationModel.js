@@ -21,7 +21,11 @@ const notificationSchema = new mongoose.Schema(
       enum: [
         "REQUEST_CREATED",
         "REQUEST_ACCEPTED",
-        "REQUEST_CANCELLED"
+        "REQUEST_CANCELLED",
+        "REQUEST_ACCEPTED_BY_YOU",
+        "CANCELLATION_CONFIRMED",
+        "REQUEST_CANCELLED_BY_PATIENT",
+        "REQUEST_COMPLETED"
       ],
       required: true,
     },

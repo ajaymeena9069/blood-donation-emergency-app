@@ -62,12 +62,12 @@ export default function SinglePatientRequest() {
     },
     rejected: {
       badge: "bg-red-100 text-red-800 border-red-300",
-      icon: "❌",
+      icon: "🚫",
       label: "Rejected"
     },
     cancelled: {
       badge: "bg-gray-100 text-gray-800 border-gray-300",
-      icon: "🚫",
+      icon: "⛔",
       label: "Cancelled"
     },
   };
@@ -324,12 +324,27 @@ export default function SinglePatientRequest() {
 
                   <div className="space-y-4">
                     {/* Donor Responses */}
-                    {request.donorResponses && request.donorResponses.length > 0 && (
-                      <div className="p-3 bg-blue-50 rounded-lg">
+                    {request.donorResponses && request.donorResponses.length > 0 ? (
+                      <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
                         <p className="text-sm font-medium text-blue-700 flex items-center gap-2">
                           <FaUsers />
-                          Donor Responses: {request.donorResponses.length}
+                          {request.donorResponses.length} {request.donorResponses.length === 1 ? 'donor has been' : 'donors have been'} notified
                         </p>
+                      </div>
+                    ) : (
+                      <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                        <p className="text-sm font-medium text-gray-600 flex items-center gap-2">
+                          <FaUsers />
+                          Searching for matching donors...
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Rejection Reason */}
+                    {request.status === 'rejected' && request.rejectionReason && (
+                      <div className="p-3 bg-red-50 rounded-lg border border-red-200">
+                        <p className="text-sm font-semibold text-red-700 mb-1">Rejection Reason:</p>
+                        <p className="text-sm text-red-600">{request.rejectionReason}</p>
                       </div>
                     )}
 

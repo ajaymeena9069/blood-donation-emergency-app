@@ -1,8 +1,8 @@
 /* eslint-disable no-unused-vars */
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useCreateRequestMutation } from "../features/api/bloodApi";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useSelector } from "react-redux";
 import { FaTint, FaHospital, FaMapMarkerAlt, FaExclamationTriangle, FaPaperPlane, FaArrowLeft } from "react-icons/fa";
 
@@ -10,15 +10,16 @@ const BLOOD_GROUPS = ["A+", "A-", "B+", "B-", "O+", "O-", "AB+", "AB-"];
 
 export default function BloodRequestForm() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { user } = useSelector((state) => state.auth);
   const [createBloodRequest, { isLoading }] = useCreateRequestMutation();
 
   const [formData, setFormData] = useState({
-    bloodGroup: "",
+    bloodGroup: user?.bloodGroup || "",
     units: 1,
     city: user?.city || "",
     hospitalName: "",
-    emergency: false,
+    emergency: searchParams.get('emergency') === 'true',
   });
 
   const handleChange = (e) => {

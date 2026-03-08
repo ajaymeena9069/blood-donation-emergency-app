@@ -9,12 +9,31 @@ const safeParse = (value) => {
     }
 };
 
+const validateToken = (token) => {
+    if (!token) return false;
+    try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        return payload.exp * 1000 > Date.now();
+    } catch {
+        return false;
+    }
+};
+
+const storedToken = localStorage.getItem("token");
+const isValidToken = validateToken(storedToken);
+
+if (!isValidToken && storedToken) {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    localStorage.removeItem("role");
+}
+
 const authSlice = createSlice({
     name: "auth",
     initialState: {
-        token: localStorage.getItem("token") || null,
-        user: safeParse(localStorage.getItem("user")) || null,
-        isAuthenticated: !!localStorage.getItem("token"),
+        token: isValidToken ? storedToken : null,
+        user: isValidToken ? safeParse(localStorage.getItem("user")) : null,
+        isAuthenticated: isValidToken,
     },
 
     reducers: {

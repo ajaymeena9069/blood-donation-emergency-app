@@ -8,17 +8,17 @@ import {
   FaMapMarkerAlt, FaBirthdayCake, FaVenusMars,
   FaUserMd, FaHandHoldingHeart
 } from "react-icons/fa";
-import FlashMessage from "../component/FlashMessage";
 import { useDispatch } from "react-redux";
 import { setCredentials } from "../features/auth/authSlice";
-import { registerSchema } from "../../../common/validators/user.validator.js";
+import { registerSchema } from "../validators/user.validator.js";
+import FlashMessage from "../component/FlashMessage";
 
 export default function UserRegistration() {
   const navigate = useNavigate();
   const dispatch = useDispatch();
+  const [flash, setFlash] = useState({ type: "", message: "" });
   const [registerUser] = useRegisterUserMutation();
   const [loginUser] = useLoginUserMutation();
-  const [flash, setFlash] = useState({ type: "", message: "" });
 
   const {
     register,
@@ -38,6 +38,7 @@ export default function UserRegistration() {
       age: "",
       gender: "",
       roleType: "",
+      address: ""
     }
   });
 
@@ -52,11 +53,6 @@ export default function UserRegistration() {
   const onSubmit = async (formData) => {
     try {
       await registerUser(formData).unwrap();
-      
-      setFlash({ 
-        type: "success", 
-        message: "Registration successful! Logging you in..." 
-      });
 
       const loginResponse = await loginUser({
         email: formData.email,
@@ -72,10 +68,7 @@ export default function UserRegistration() {
         user
       }));
 
-      setFlash({ 
-        type: "success", 
-        message: `Welcome ${formData.name}! Redirecting...` 
-      });
+      setFlash({ type: "success", message: `Welcome ${formData.name}! Redirecting...` });
 
       setTimeout(() => {
         navigate(`/${userRole}/dashboard`);
@@ -99,12 +92,9 @@ export default function UserRegistration() {
   const inputClass = "w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:border-red-500 focus:ring-2 focus:ring-red-200 outline-none transition bg-white";
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4">
-      <FlashMessage
-        type={flash.type}
-        message={flash.message}
-        onClose={() => setFlash({ type: "", message: "" })}
-      />
+    <>
+      <FlashMessage flash={flash} setFlash={setFlash} />
+      <div className="min-h-screen bg-gray-50 py-8 px-4">
 
       <div className="max-w-md mx-auto">
         <div className="text-center mb-8">
@@ -237,6 +227,20 @@ export default function UserRegistration() {
               {errors.gender && <p className="text-red-500 text-xs mt-1">{errors.gender.message}</p>}
             </div>
 
+            <div>
+              <label className="block text-sm text-gray-700 mb-1">Address (Optional)</label>
+              <div className="relative">
+                <FaMapMarkerAlt className="absolute left-3 top-3 text-gray-400 text-sm" />
+                <textarea
+                  {...register("address")}
+                  rows="3"
+                  placeholder="Enter your complete address"
+                  className={`${inputClass} ${errors.address ? 'border-red-500' : ''}`}
+                />
+              </div>
+              {errors.address && <p className="text-red-500 text-xs mt-1">{errors.address.message}</p>}
+            </div>
+
             <button
               type="submit"
               disabled={!selectedRole}
@@ -271,6 +275,7 @@ export default function UserRegistration() {
           </p>
         </div>
       </div>
-    </div>
+      </div>
+    </>
   );
 }

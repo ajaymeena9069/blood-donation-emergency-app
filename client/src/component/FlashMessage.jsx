@@ -39,29 +39,43 @@ export const getMessage = (section, key) => {
 // -----------------------------------------
 // 🔥 MODERN FLASH MESSAGE
 // -----------------------------------------
-const FlashMessage = ({ type = "error", message, onClose }) => {
-
+const FlashMessage = ({ flash, setFlash }) => {
     const [progress, setProgress] = useState(100);
+
+    const { type = "error", message = "" } = flash || {};
+
+    const onClose = () => {
+        if (setFlash) {
+            setFlash({ type: "", message: "" });
+        }
+    };
 
     // Auto close + progress animation
     useEffect(() => {
         if (message) {
             setProgress(100);
 
+            const duration = 3000; // 3 seconds
             const interval = setInterval(() => {
                 setProgress((prev) => {
                     if (prev <= 0) {
                         clearInterval(interval);
-                        onClose();
                         return 0;
                     }
-                    return prev - 1;
+                    return prev - (100 / (duration / 30));
                 });
             }, 30);
 
-            return () => clearInterval(interval);
+            const timeout = setTimeout(() => {
+                onClose();
+            }, duration);
+
+            return () => {
+                clearInterval(interval);
+                clearTimeout(timeout);
+            };
         }
-    }, [message, onClose]);
+    }, [message]);
 
     if (!message) return null;
 

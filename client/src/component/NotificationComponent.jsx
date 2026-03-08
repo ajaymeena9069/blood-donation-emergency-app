@@ -87,6 +87,11 @@ const NotificationComponent = ({
                                                     {n.title}
                                                 </p>
                                                 <p className="text-xs text-gray-600 line-clamp-1 mt-0.5">{n.message}</p>
+                                                {n.reason && (
+                                                    <p className="text-xs text-red-600 bg-red-50 border border-red-200 rounded p-1.5 mt-1">
+                                                        <strong>Reason:</strong> {n.reason}
+                                                    </p>
+                                                )}
                                                 <p className="text-xs text-gray-500 mt-1">
                                                     {formatTimeAgo(n.createdAt)}
                                                 </p>
@@ -159,6 +164,11 @@ const NotificationComponent = ({
                                         {!n.isRead && <span className="text-xs text-blue-600">● NEW</span>}
                                     </div>
                                     <p className="text-xs text-gray-600 line-clamp-2">{n.message}</p>
+                                    {n.reason && (
+                                        <p className="text-xs text-red-600 bg-red-50 border border-red-200 rounded p-2 mt-2">
+                                            <strong>Cancellation Reason:</strong> {n.reason}
+                                        </p>
+                                    )}
                                     <p className="text-xs text-gray-500 mt-2">
                                         {formatTimeAgo(n.createdAt)}
                                     </p>

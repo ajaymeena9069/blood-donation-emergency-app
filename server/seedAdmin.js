@@ -14,9 +14,10 @@ const seedAdmin = async () => {
         const existingAdmin = await User.findOne({ email: adminEmail });
 
         if (existingAdmin) {
-            console.log("✅ Admin already exists");
+            console.log("✅ Admin already exists:", adminEmail);
             process.exit(0);
         }
+
         const hashedPassword = await argon2.hash("admin9069");
 
         const admin = await User.create({
@@ -25,19 +26,19 @@ const seedAdmin = async () => {
             password: hashedPassword,
             phone: "9516624030",
             bloodGroup: "O+",
-            city: "System",
+            city: "Indore",
             age: 21,
-            gender: "male",
+            gender: "Male",
             role: ["admin"],
             activeRole: "admin",
+            status: "active",
             available: false,
         });
 
-        console.log("🔥 Admin created successfully");
-        console.log({
-            email: admin.email,
-            role: admin.role,
-        });
+        console.log("🔥 Admin created successfully!");
+        console.log("   Name:", admin.name);
+        console.log("   Email:", admin.email);
+        console.log("   Role:", admin.role);
 
         process.exit(0);
     } catch (error) {

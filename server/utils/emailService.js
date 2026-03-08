@@ -76,7 +76,7 @@ export const emailDonorForNewRequest = async (donorEmail, donorName, patientName
     };
 
     // const info = await transporter.sendMail(mailOptions);
-    return { success: true, messageId: info.messageId };
+    // return { success: true, messageId: info.messageId };
   } catch (error) {
     console.error(`❌ Failed to email donor ${donorEmail}:`, error.message);
     return { success: false, error: error.message };
@@ -151,14 +151,13 @@ export const emailPatientForAcceptance = async (patientEmail, patientName, donor
     };
 
     // const info = await transporter.sendMail(mailOptions);
-    return { success: true, messageId: info.messageId };
+    // return { success: true, messageId: info.messageId };
 
   } catch (error) {
     console.error(`❌ Failed to email patient ${patientEmail}:`, error.message);
     return { success: false, error: error.message };
   }
 };
-
 
 export const emailPatientForCancellation = async (patientEmail, patientName, donorName, requestDetails, reason) => {
   try {
@@ -242,8 +241,8 @@ export const emailPatientForCancellation = async (patientEmail, patientName, don
     };
 
     // const info = await transporter.sendMail(mailOptions);
-    console.log(`✅ Cancellation email sent to ${patientEmail}: ${info.messageId}`);
-    return { success: true, messageId: info.messageId };
+    // console.log(`✅ Cancellation email sent to ${patientEmail}: ${info.messageId}`);
+    // return { success: true, messageId: info.messageId };
 
   } catch (error) {
     console.error(`❌ Failed to send cancellation email to ${patientEmail}:`, error.message);
@@ -349,11 +348,224 @@ export const emailDonorForPatientCancellation = async (donorEmail, donorName, pa
     };
 
     // const info = await transporter.sendMail(mailOptions);
-    console.log(`✅ Patient cancellation email sent to donor ${donorEmail}: ${info.messageId}`);
-    return { success: true, messageId: info.messageId };
+    // console.log(`✅ Patient cancellation email sent to donor ${donorEmail}: ${info.messageId}`);
+    // return { success: true, messageId: info.messageId };
 
   } catch (error) {
     console.error(`❌ Failed to send cancellation email to donor ${donorEmail}:`, error.message);
+    return { success: false, error: error.message };
+  }
+};
+
+export const sendPasswordResetEmail = async (userEmail, userName, resetUrl) => {
+  try {
+    const mailOptions = {
+      from: `"Blood Donation System" <${EMAIL_USER}>`,
+      to: userEmail,
+      subject: `🔐 Password Reset Request - Blood Donation System`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #f8fafc; padding: 20px;">
+          <div style="background: #3b82f6; color: white; padding: 25px; text-align: center; border-radius: 10px 10px 0 0;">
+            <h1 style="margin: 0; font-size: 24px;">🔐 Password Reset Request</h1>
+          </div>
+          
+          <div style="background: white; padding: 30px; border-radius: 0 0 10px 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+            <h2 style="color: #333; margin-bottom: 20px;">Hello ${userName},</h2>
+            
+            <p style="color: #555; line-height: 1.6; margin-bottom: 20px;">
+              We received a request to reset your password for your Blood Donation System account.
+            </p>
+            
+            <div style="background: #eff6ff; padding: 20px; border-radius: 8px; border-left: 4px solid #3b82f6; margin-bottom: 25px;">
+              <p style="color: #555; margin: 0; line-height: 1.6;">
+                Click the button below to reset your password. This link will expire in <strong>30 minutes</strong>.
+              </p>
+            </div>
+            
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="${resetUrl}" 
+                 style="background: #3b82f6; color: white; padding: 14px 30px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block; font-size: 16px;">
+                🔑 Reset Password
+              </a>
+            </div>
+            
+            <div style="background: #fef2f2; padding: 15px; border-radius: 8px; margin-top: 25px;">
+              <p style="color: #dc2626; margin: 0; font-size: 14px;">
+                <strong>⚠️ Security Notice:</strong> If you didn't request this password reset, please ignore this email. Your password will remain unchanged.
+              </p>
+            </div>
+            
+            <div style="margin-top: 25px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
+              <p style="color: #6b7280; font-size: 14px; margin-bottom: 10px;">
+                If the button doesn't work, copy and paste this link into your browser:
+              </p>
+              <p style="color: #3b82f6; font-size: 12px; word-break: break-all; background: #f3f4f6; padding: 10px; border-radius: 5px;">
+                ${resetUrl}
+              </p>
+            </div>
+            
+            <div style="color: #6b7280; font-size: 14px; margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
+              <p><strong>Need help?</strong> Contact our support: support@blooddonation.com</p>
+              <p>© ${new Date().getFullYear()} Blood Donation System. All rights reserved.</p>
+            </div>
+          </div>
+        </div>
+      `,
+    };
+
+    const info = await transporter.sendMail(mailOptions);
+    console.log(`✅ Password reset email sent to ${userEmail}: ${info.messageId}`);
+    return { success: true, messageId: info.messageId };
+
+  } catch (error) {
+    console.error(`❌ Failed to send password reset email to ${userEmail}:`, error.message);
+    throw error;
+  }
+};
+
+export const sendNewUserCredentials = async (userEmail, userName, password, role) => {
+  try {
+    const mailOptions = {
+      from: `"Blood Donation System" <${EMAIL_USER}>`,
+      to: userEmail,
+      subject: `🎉 Welcome to Blood Donation System - Your Account Details`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #f8fafc; padding: 20px;">
+          <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 25px; text-align: center; border-radius: 10px 10px 0 0;">
+            <h1 style="margin: 0; font-size: 24px;">🎉 Welcome to Blood Donation System!</h1>
+          </div>
+          
+          <div style="background: white; padding: 30px; border-radius: 0 0 10px 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+            <h2 style="color: #333; margin-bottom: 20px;">Hello ${userName},</h2>
+            
+            <p style="color: #555; line-height: 1.6; margin-bottom: 20px;">
+              Your account has been created by an administrator. Welcome to our blood donation community!
+            </p>
+            
+            <div style="background: #d1fae5; padding: 20px; border-radius: 8px; border-left: 4px solid #10b981; margin-bottom: 25px;">
+              <h3 style="color: #333; margin-top: 0;">🔑 Your Login Credentials:</h3>
+              <table style="width: 100%;">
+                <tr>
+                  <td style="padding: 8px 0; color: #666;"><strong>Email:</strong></td>
+                  <td style="padding: 8px 0; font-family: monospace; background: #f3f4f6; padding: 5px 10px; border-radius: 4px;">${userEmail}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 8px 0; color: #666;"><strong>Password:</strong></td>
+                  <td style="padding: 8px 0; font-family: monospace; background: #fef3c7; padding: 5px 10px; border-radius: 4px; font-weight: bold;">${password}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 8px 0; color: #666;"><strong>Role:</strong></td>
+                  <td style="padding: 8px 0; text-transform: capitalize;">${role}</td>
+                </tr>
+              </table>
+            </div>
+            
+            <div style="background: #fef2f2; padding: 15px; border-radius: 8px; margin-bottom: 25px;">
+              <p style="color: #dc2626; margin: 0; font-size: 14px;">
+                <strong>⚠️ Important:</strong> Please change your password after your first login for security reasons.
+              </p>
+            </div>
+            
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="${FRONTEND_URL || 'http://localhost:3000'}/login" 
+                 style="background: #10b981; color: white; padding: 14px 30px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block; font-size: 16px;">
+                🚀 Login Now
+              </a>
+            </div>
+            
+            <div style="background: #eff6ff; padding: 20px; border-radius: 8px; margin-bottom: 25px;">
+              <h4 style="color: #0369a1; margin-top: 0;">📋 Next Steps:</h4>
+              <ol style="color: #555; line-height: 1.6; padding-left: 20px;">
+                <li>Login using the credentials above</li>
+                <li>Complete your profile information</li>
+                <li>Change your password in settings</li>
+                <li>Start ${role === 'donor' ? 'saving lives by donating blood' : 'requesting blood when needed'}</li>
+              </ol>
+            </div>
+            
+            <div style="color: #6b7280; font-size: 14px; margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
+              <p><strong>Need help?</strong> Contact our support: support@blooddonation.com</p>
+              <p>© ${new Date().getFullYear()} Blood Donation System. All rights reserved.</p>
+            </div>
+          </div>
+        </div>
+      `,
+    };
+
+    const info = await transporter.sendMail(mailOptions);
+    console.log(`✅ Credentials email sent to ${userEmail}: ${info.messageId}`);
+    return { success: true, messageId: info.messageId };
+
+  } catch (error) {
+    console.error(`❌ Failed to send credentials email to ${userEmail}:`, error.message);
+    return { success: false, error: error.message };
+  }
+};
+
+export const sendRequestRejectionEmail = async (patientEmail, patientName, bloodGroup, rejectionReason) => {
+  try {
+    const mailOptions = {
+      from: `"Blood Donation System" <${EMAIL_USER}>`,
+      to: patientEmail,
+      subject: `❌ Blood Request Rejected - ${bloodGroup}`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #f8fafc; padding: 20px;">
+          <div style="background: #dc2626; color: white; padding: 25px; text-align: center; border-radius: 10px 10px 0 0;">
+            <h1 style="margin: 0; font-size: 24px;">❌ Request Rejected</h1>
+          </div>
+          
+          <div style="background: white; padding: 30px; border-radius: 0 0 10px 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+            <h2 style="color: #333; margin-bottom: 20px;">Dear ${patientName},</h2>
+            
+            <p style="color: #555; line-height: 1.6; margin-bottom: 20px;">
+              We regret to inform you that your blood request for <strong>${bloodGroup}</strong> has been rejected by the administrator.
+            </p>
+            
+            <div style="background: #fef2f2; padding: 20px; border-radius: 8px; border-left: 4px solid #dc2626; margin-bottom: 25px;">
+              <h3 style="color: #333; margin-top: 0;">Rejection Reason:</h3>
+              <p style="color: #555; line-height: 1.6; font-style: italic; background: #fecaca; padding: 15px; border-radius: 5px;">
+                "${rejectionReason}"
+              </p>
+            </div>
+            
+            <div style="background: #eff6ff; padding: 20px; border-radius: 8px; margin-bottom: 25px;">
+              <h4 style="color: #0369a1; margin-top: 0;">📋 What You Can Do:</h4>
+              <ul style="color: #555; line-height: 1.6; padding-left: 20px;">
+                <li>Review the rejection reason carefully</li>
+                <li>Contact the administrator if you have questions</li>
+                <li>Create a new request with correct information</li>
+                <li>Contact the hospital directly for urgent needs</li>
+              </ul>
+            </div>
+            
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="${FRONTEND_URL || 'http://localhost:3000'}/patient/create/request" 
+                 style="background: #3b82f6; color: white; padding: 14px 30px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block; font-size: 16px;">
+                📝 Create New Request
+              </a>
+            </div>
+            
+            <div style="background: #fef3c7; padding: 15px; border-radius: 8px; margin-top: 25px;">
+              <p style="color: #92400e; margin: 0; font-weight: bold;">
+                ⚠️ For emergency needs, please contact: 102 or visit nearest hospital
+              </p>
+            </div>
+            
+            <div style="color: #6b7280; font-size: 14px; margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
+              <p><strong>Need help?</strong> Contact support: support@blooddonation.com</p>
+              <p>© ${new Date().getFullYear()} Blood Donation System. All rights reserved.</p>
+            </div>
+          </div>
+        </div>
+      `,
+    };
+
+    const info = await transporter.sendMail(mailOptions);
+    console.log(`✅ Rejection email sent to ${patientEmail}: ${info.messageId}`);
+    return { success: true, messageId: info.messageId };
+
+  } catch (error) {
+    console.error(`❌ Failed to send rejection email to ${patientEmail}:`, error.message);
     return { success: false, error: error.message };
   }
 };

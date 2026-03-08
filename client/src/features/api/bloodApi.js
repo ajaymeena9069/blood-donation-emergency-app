@@ -21,6 +21,9 @@ export const bloodApi = createApi({
 
             return headers;
         },
+        validateStatus: (response, result) => {
+            return response.status >= 200 && response.status < 300;
+        },
     }),
 
     tagTypes: [
@@ -141,6 +144,14 @@ export const bloodApi = createApi({
             invalidatesTags: ["Donor"],
         }),
 
+        resetDonationTimer: builder.mutation({
+            query: () => ({
+                url: "/user/reset-timer",
+                method: "POST",
+            }),
+            invalidatesTags: ["Profile", "User", "Donor"],
+        }),
+
         acceptRequest: builder.mutation({
             query: (id) => ({
                 url: `/request/${id}/accept`,
@@ -184,16 +195,107 @@ export const bloodApi = createApi({
             }),
         }),
 
+        // Dashboard Stats
+        getAdminDashboardStats: builder.query({
+            query: () => "/admin/dashboard/stats",
+            providesTags: ["Request", "User"],
+        }),
+
+        getAdminRecentActivities: builder.query({
+            query: (limit = 20) => `/admin/dashboard/activities?limit=${limit}`,
+            providesTags: ["Request", "User"],
+        }),
+
+        getAdminAnalytics: builder.query({
+            query: (timeRange = 'week') => `/admin/dashboard/analytics?timeRange=${timeRange}`,
+            providesTags: ["Request", "User"],
+        }),
+
+        // Requests Management
         adminGetAllRequests: builder.query({
-            query: () => "/admin/requests",
+            query: ({ status, emergency, limit } = {}) => {
+                const params = new URLSearchParams();
+                if (status) params.append('status', status);
+                if (emergency !== undefined) params.append('emergency', emergency);
+                if (limit) params.append('limit', limit);
+                return `/admin/requests?${params.toString()}`;
+            },
+            transformResponse: (response) => response.data || [],
             providesTags: ["Request"],
         }),
 
         adminUpdateRequestStatus: builder.mutation({
-            query: ({ id, status }) => ({
+            query: ({ id, status, rejectionReason }) => ({
                 url: `/admin/requests/${id}`,
                 method: "PUT",
-                body: { status },
+                body: { status, ...(rejectionReason && { rejectionReason }) },
+            }),
+            invalidatesTags: ["Request", "User", "Profile"],
+        }),
+
+        adminDeleteRequest: builder.mutation({
+            query: (id) => ({
+                url: `/admin/requests/${id}`,
+                method: "DELETE",
+            }),
+            invalidatesTags: ["Request"],
+        }),
+
+        // Users Management
+        adminGetAllUsers: builder.query({
+            query: ({ role, available, city, bloodGroup, limit } = {}) => {
+                const params = new URLSearchParams();
+                if (role) params.append('role', role);
+                if (available !== undefined) params.append('available', available);
+                if (city) params.append('city', city);
+                if (bloodGroup) params.append('bloodGroup', bloodGroup);
+                if (limit) params.append('limit', limit);
+                return `/admin/users?${params.toString()}`;
+            },
+            transformResponse: (response) => response.data || [],
+            providesTags: ["User"],
+        }),
+
+        adminCreateUser: builder.mutation({
+            query: (data) => ({
+                url: `/admin/users`,
+                method: "POST",
+                body: data,
+            }),
+            invalidatesTags: ["User"],
+        }),
+
+        adminUpdateUserStatus: builder.mutation({
+            query: ({ id, ...data }) => ({
+                url: `/admin/users/${id}/status`,
+                method: "PUT",
+                body: data,
+            }),
+            invalidatesTags: ["User"],
+        }),
+
+        adminDeleteUser: builder.mutation({
+            query: (id) => ({
+                url: `/admin/users/${id}`,
+                method: "DELETE",
+            }),
+            invalidatesTags: ["User"],
+        }),
+
+        adminBulkDeleteUsers: builder.mutation({
+            query: (userIds) => ({
+                url: `/admin/users/bulk-delete`,
+                method: "POST",
+                body: { userIds },
+            }),
+            invalidatesTags: ["User"],
+        }),
+
+        adminBulkDeleteRequests: builder.mutation({
+            query: (requestIds) => ({
+                url: `/admin/requests/bulk-delete`,
+                method: "POST",
+                body: { requestIds },
             }),
             invalidatesTags: ["Request"],
         }),
@@ -253,6 +355,11 @@ export const bloodApi = createApi({
                 { type: "Notification", id: "UNREAD_COUNT" },
             ],
         }),
+
+        /* -------------------- STATS -------------------- */
+        getHomeStats: builder.query({
+            query: () => "/stats/home",
+        }),
     }),
 });
 
@@ -273,6 +380,7 @@ export const {
 
     useGetAllDonorsQuery,
     useUpdateAvailabilityMutation,
+    useResetDonationTimerMutation,
 
     useGetDonorMatchesQuery,
     useDonorRespondMutation,
@@ -284,6 +392,18 @@ export const {
     useDeleteNotificationMutation,
 
     useLoginAdminMutation,
+    useGetAdminDashboardStatsQuery,
+    useGetAdminRecentActivitiesQuery,
+    useGetAdminAnalyticsQuery,
     useAdminGetAllRequestsQuery,
     useAdminUpdateRequestStatusMutation,
+    useAdminDeleteRequestMutation,
+    useAdminGetAllUsersQuery,
+    useAdminCreateUserMutation,
+    useAdminUpdateUserStatusMutation,
+    useAdminDeleteUserMutation,
+    useAdminBulkDeleteUsersMutation,
+    useAdminBulkDeleteRequestsMutation,
+
+    useGetHomeStatsQuery,
 } = bloodApi;

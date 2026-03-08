@@ -3,10 +3,10 @@ import { useSelector } from "react-redux";
 import { motion } from "framer-motion";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
-  FaTint, FaHospital, FaUser, FaCalendarAlt, FaMapMarkerAlt,
-  FaCheckCircle, FaTimesCircle, FaHeartbeat, FaInfoCircle,
+  FaTint, FaHospital, FaUser, FaMapMarkerAlt,
+  FaCheckCircle, FaTimesCircle, FaHeartbeat,
   FaArrowLeft, FaHistory, FaClock, FaExclamationTriangle,
-  FaSpinner
+  FaSpinner, FaArrowRight, FaInfoCircle
 } from "react-icons/fa";
 import {
   useGetDonorMatchesQuery,
@@ -14,13 +14,16 @@ import {
   useCancelRequestMutation
 } from "../../features/api/bloodApi";
 import FlashMessage from "../FlashMessage";
+
 export default function DonorMatchingRequests() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useSelector((state) => state.auth);
   const [flash, setFlash] = useState({ type: "", message: "" });
   const [showCancelModal, setShowCancelModal] = useState(false);
+  const [showAcceptModal, setShowAcceptModal] = useState(false);
   const [cancelData, setCancelData] = useState({ id: "", patientName: "", bloodGroup: "" });
+  const [acceptData, setAcceptData] = useState({ id: "", patientName: "", bloodGroup: "", hospital: "" });
   const [reason, setReason] = useState("");
 
   const queryParams = new URLSearchParams(location.search);
@@ -78,41 +81,41 @@ export default function DonorMatchingRequests() {
     });
   };
 
-  const handleAccept = async (id, patientName, bloodGroup) => {
+  const openAccept = (id, patientName, bloodGroup, hospital) => {
+    setAcceptData({ id, patientName, bloodGroup, hospital });
+    setShowAcceptModal(true);
+  };
+
+  const handleAccept = async () => {
+    setShowAcceptModal(false);
     try {
-      const result = await accept(id).unwrap();
+      const result = await accept(acceptData.id).unwrap();
       if (result.success) {
-        setFlash({
-          show: true,
-          type: "success",
-          message: `✅ Accepted ${patientName}'s ${bloodGroup} request!`
-        });
+        setFlash({ type: "success", message: `✅ Accepted ${acceptData.patientName}'s ${acceptData.bloodGroup} request!` });
         refetch();
       }
     } catch (err) {
-      setFlash({
-        show: true,
-        type: "error",
-        message: err?.data?.message || err?.error?.data?.message || "Accept failed"
-      });
+      console.error('Accept error:', err);
+      const errorMsg = err?.data?.message || err?.message || "Failed to accept request";
+      setFlash({ type: "error", message: errorMsg });
     }
   };
 
   const handleCancel = async () => {
     if (reason.length < 10) {
-      setFlash({ show: true, type: "error", message: "❌ Reason must be at least 10 characters" });
+      setFlash({ type: "error", message: "❌ Reason must be at least 10 characters" });
       return;
     }
     try {
       const result = await cancel({ id: cancelData.id, reason }).unwrap();
       if (result.success) {
-        setFlash({ show: true, type: "success", message: `✅ Cancelled ${cancelData.patientName}'s request` });
+        setFlash({ type: "success", message: `✅ Cancelled ${cancelData.patientName}'s request` });
         setShowCancelModal(false);
         setReason("");
         refetch();
       }
     } catch (err) {
-      setFlash({ show: true, type: "error", message: err?.data?.message || "Cancel failed" });
+      setFlash({ type: "error", message: err?.data?.message || "Cancel failed" });
     }
   };
 
@@ -123,11 +126,13 @@ export default function DonorMatchingRequests() {
 
   if (isLoading) {
     return (
-      <div className="max-w-7xl mx-auto px-4 py-6">
-        <div className="flex items-center justify-center h-96">
-          <div className="text-center">
-            <FaSpinner className="animate-spin text-4xl text-red-600 mx-auto mb-4" />
-            <p className="text-gray-600">Loading requests...</p>
+      <div className="bg-gray-50 min-h-screen w-full">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 sm:py-6">
+          <div className="flex items-center justify-center h-96">
+            <div className="text-center">
+              <FaSpinner className="animate-spin text-4xl text-red-600 mx-auto mb-4" />
+              <p className="text-gray-600">Loading requests...</p>
+            </div>
           </div>
         </div>
       </div>
@@ -136,26 +141,34 @@ export default function DonorMatchingRequests() {
 
   if (isError) {
     return (
-      <div className="max-w-7xl mx-auto px-4 py-6">
-        <div className="bg-red-50 border border-red-200 rounded-xl p-6 text-center">
-          <div className="text-red-500 text-4xl mb-4">⚠️</div>
-          <h3 className="text-lg font-semibold text-red-700 mb-2">Failed to Load</h3>
-          <p className="text-red-600 mb-4">{error?.data?.message || "Unable to fetch requests"}</p>
-          <button onClick={() => refetch()} className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">
-            Retry
-          </button>
+      <div className="bg-gray-50 min-h-screen w-full">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 sm:py-6">
+          <div className="flex items-center justify-between mb-6">
+            <button onClick={() => navigate("/donor/dashboard")} className="p-2 hover:bg-gray-100 rounded-lg">
+              <FaArrowLeft className="text-gray-600 text-lg" />
+            </button>
+          </div>
+          <div className="text-center py-12">
+            <button 
+              onClick={() => {
+                setFlash({ type: "error", message: error?.data?.message || "Unable to fetch requests" });
+                refetch();
+              }} 
+              className="px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700"
+            >
+              Retry
+            </button>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-6">
-      <FlashMessage
-        type={flash.type}
-        message={flash.message}
-        onClose={() => setFlash({ show: false, type: "", message: "" })}
-      />
+    <>
+      <FlashMessage flash={flash} setFlash={setFlash} />
+      <div className="bg-gray-50 min-h-screen w-full">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 sm:py-6">
 
       <div className="mb-8">
         <div className="flex items-center justify-between mb-6">
@@ -205,7 +218,7 @@ export default function DonorMatchingRequests() {
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {filteredRequests.map((req, idx) => {
             const patientName = req.patientName || req.patientId?.name || "Anonymous";
             const canAccept = req.status === "pending";
@@ -229,8 +242,8 @@ export default function DonorMatchingRequests() {
                 <div className="p-5">
                   <div className="flex justify-between items-start mb-4">
                     <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                        <FaUser className="text-blue-600 text-sm" />
+                      <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                        <FaUser className="text-blue-600" />
                       </div>
                       <div>
                         <h3 className="font-bold text-gray-900">{patientName}</h3>
@@ -245,14 +258,18 @@ export default function DonorMatchingRequests() {
                   <div className="space-y-3 mb-4">
                     <div className="grid grid-cols-2 gap-3">
                       <div className="flex items-center gap-2">
-                        <FaTint className="text-red-500" />
+                        <div className="p-2 bg-red-50 rounded-lg">
+                          <FaTint className="text-red-500" />
+                        </div>
                         <div>
                           <p className="text-xs text-gray-600">Blood Group</p>
                           <p className="font-bold text-red-600">{req.bloodGroup}</p>
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
-                        <FaCalendarAlt className="text-blue-500" />
+                        <div className="p-2 bg-blue-50 rounded-lg">
+                          <FaHeartbeat className="text-blue-500" />
+                        </div>
                         <div>
                           <p className="text-xs text-gray-600">Units</p>
                           <p className="font-bold text-gray-900">{req.units}</p>
@@ -267,8 +284,9 @@ export default function DonorMatchingRequests() {
                       <FaMapMarkerAlt className="text-gray-400" />
                       <p className="text-sm">{req.city || "Location not specified"}</p>
                     </div>
-                    <div className="text-xs text-gray-500 pt-1">
-                      Requested {formatDate(req.createdAt)}
+                    <div className="flex items-center gap-2">
+                      <FaClock className="text-gray-400 text-xs" />
+                      <p className="text-xs text-gray-500">Requested {formatDate(req.createdAt)}</p>
                     </div>
                     {req.status === "accepted" && req.acceptedAt && (
                       <div className="text-xs text-green-600 font-medium bg-green-50 p-2 rounded">
@@ -277,41 +295,92 @@ export default function DonorMatchingRequests() {
                     )}
                   </div>
 
-                  <div className="pt-4 border-t">
-                    <div className="flex gap-2">
-                      {canAccept && (
-                        <button
-                          onClick={() => handleAccept(req._id, patientName, req.bloodGroup)}
-                          disabled={isAccepting || isCancelling}
-                          className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center justify-center gap-2 text-sm disabled:opacity-50 transition-colors"
-                        >
-                          {isAccepting ? <FaSpinner className="animate-spin" /> : <FaCheckCircle />}
-                          {isAccepting ? "Accepting..." : "Accept Request"}
-                        </button>
-                      )}
+                  <div className="pt-4 border-t flex flex-col gap-2">
+                    {canAccept && (
+                      <button
+                        onClick={() => openAccept(req._id, patientName, req.bloodGroup, req.hospitalName)}
+                        disabled={isAccepting || isCancelling}
+                        className="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center justify-center gap-2 text-sm disabled:opacity-50 transition-colors font-medium"
+                      >
+                        {isAccepting ? <FaSpinner className="animate-spin" /> : <FaCheckCircle />}
+                        {isAccepting ? "Accepting..." : "Accept Request"}
+                      </button>
+                    )}
 
-                      {canCancel && (
-                        <button
-                          onClick={() => openCancel(req._id, patientName, req.bloodGroup)}
-                          disabled={isAccepting || isCancelling}
-                          className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 flex items-center justify-center gap-2 text-sm disabled:opacity-50 transition-colors"
-                        >
-                          <FaTimesCircle /> Cancel Acceptance
-                        </button>
-                      )}
+                    {canCancel && (
+                      <button
+                        onClick={() => openCancel(req._id, patientName, req.bloodGroup)}
+                        disabled={isAccepting || isCancelling}
+                        className="w-full px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 flex items-center justify-center gap-2 text-sm disabled:opacity-50 transition-colors font-medium"
+                      >
+                        <FaTimesCircle /> Cancel Acceptance
+                      </button>
+                    )}
 
-                      {req.status === "completed" && (
-                        <div className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm text-center font-medium">
-                          <FaCheckCircle className="inline mr-2 text-green-600" />
-                          Donation Completed
-                        </div>
-                      )}
-                    </div>
+                    {req.status === "completed" && (
+                      <div className="w-full px-4 py-2 bg-green-50 text-green-700 rounded-lg text-sm text-center font-medium border border-green-200">
+                        <FaCheckCircle className="inline mr-2" />
+                        Donation Completed
+                      </div>
+                    )}
+
+                    <button
+                      onClick={() => navigate(`/donor/matching-requests/${req._id}`)}
+                      className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center justify-center gap-2 text-sm transition-colors font-medium"
+                    >
+                      View Details <FaArrowRight />
+                    </button>
                   </div>
                 </div>
               </motion.div>
             );
           })}
+        </div>
+      )}
+
+      {/* Accept Confirmation Modal */}
+      {showAcceptModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setShowAcceptModal(false)}>
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="text-center">
+              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <FaCheckCircle className="text-3xl text-green-600" />
+              </div>
+              <h3 className="text-2xl font-bold text-gray-900 mb-2">Accept Blood Request?</h3>
+              <p className="text-gray-600 mb-4">
+                You are about to accept <span className="font-semibold text-gray-900">{acceptData.patientName}'s</span> request for{" "}
+                <span className="text-red-600 font-bold">{acceptData.bloodGroup}</span> blood.
+              </p>
+              {acceptData.hospital && (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
+                  <div className="flex items-center gap-2 text-blue-800">
+                    <FaHospital />
+                    <p className="text-sm font-medium">{acceptData.hospital}</p>
+                  </div>
+                </div>
+              )}
+              <p className="text-sm text-gray-500 mb-6">Please make sure you can fulfill this commitment.</p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowAcceptModal(false)}
+                  className="flex-1 px-4 py-3 border-2 border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-semibold transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleAccept}
+                  className="flex-1 px-4 py-3 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg hover:from-green-600 hover:to-green-700 font-semibold transition shadow-md"
+                >
+                  Confirm Accept
+                </button>
+              </div>
+            </div>
+          </motion.div>
         </div>
       )}
 
@@ -363,6 +432,8 @@ export default function DonorMatchingRequests() {
           </div>
         </div>
       )}
-    </div>
+      </div>
+      </div>
+    </>
   );
 }

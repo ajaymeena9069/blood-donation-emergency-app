@@ -1,14 +1,12 @@
-/* eslint-disable no-unused-vars */
 import { motion } from "framer-motion";
 import { 
   HeartPulse, 
   LifeBuoy, 
-  Droplet, 
+  Search,
+  FileText,
   ShieldCheck,
   PhoneCall,
   Users,
-  Search,
-  FileText,
   Bell,
   MessageSquare,
   MapPin,
@@ -16,8 +14,15 @@ import {
   ChevronRight
 } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useGetAllDonorsQuery } from "../features/api/bloodApi";
+import { useSelector } from "react-redux";
 
 export const Services = () => {
+  const { data: donorsData } = useGetAllDonorsQuery();
+  const { user } = useSelector((state) => state.auth);
+  
+  const totalDonors = donorsData?.data?.length || 0;
+  const availableDonors = donorsData?.data?.filter(d => d.available)?.length || 0;
   const services = [
     {
       icon: <HeartPulse size={36} />,
@@ -66,7 +71,7 @@ export const Services = () => {
   const features = [
     { 
       icon: <Users size={24} />, 
-      text: "50,000+ Verified Donors",
+      text: `${totalDonors}+ Verified Donors`,
       subtext: "Active donor community"
     },
     { 
@@ -81,8 +86,8 @@ export const Services = () => {
     },
     { 
       icon: <Bell size={24} />, 
-      text: "Real-time Notifications",
-      subtext: "Instant updates on matches"
+      text: `${availableDonors}+ Available Now`,
+      subtext: "Ready to donate today"
     },
   ];
 

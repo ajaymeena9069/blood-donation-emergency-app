@@ -8,6 +8,7 @@ import {
   cancelRequest,
   deleteRequest,
   updateRequest,
+  completeRequest,
 } from "../controllers/requestController.js";
 import { verifyToken } from "../middlewares/auth.js";
 
@@ -24,6 +25,8 @@ router.get("/donor/matches", verifyToken, getMatchedRequests);
 router.post("/:id/accept", verifyToken, acceptRequest);
 
 router.post("/:id/cancel", verifyToken, cancelRequest);
+
+router.post("/:id/complete", verifyToken, completeRequest);
 
 router.delete("/:id", verifyToken, deleteRequest);
 

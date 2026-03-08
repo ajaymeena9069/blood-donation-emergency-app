@@ -1,7 +1,8 @@
 import { createBrowserRouter } from "react-router-dom";
 import MainLayout from "./component/layout/MainLayout";
-import DonorDashboard from "./pages/DonorDashboard";
-import AdminDashboard from "./pages/AdminDashboard";
+import DonorDashboard from "./component/donor/DonorDashboard";
+import AdminDashboard from "./component/admin/AdminDashboard";
+import PatientDashboard from "./component/patient/PatientDashboard";
 import BloodRequestForm from "./pages/BloodRequestForm";
 import ProtectedRoute from "./component/ProtectedRoute";
 import Home from "./pages/Home";
@@ -9,16 +10,17 @@ import FindDonors from "./pages/FindDonors";
 import { Services } from "./pages/Services";
 import Contact from "./pages/Contact";
 import BloodCare from "./pages/BloodCamps";
-import PatientDashboard from "./pages/PatientDashboard";
-import PatientRequests from "./component/Common/PatientRequests";
+import PatientRequests from "./component/common/PatientRequests";
 import SinglePatientRequest from "./component/ui/SinglePatientRequest";
-// import DonorNotifications from "./component/ui/DonorNotifications";
 import DonorMatchingRequests from "./component/ui/DonorMatchingRequests";
 import UserRegistration from "./pages/UserRegistration";
 import UserLogin from "./pages/UserLogin";
 import UserProfile from "./pages/UserProfile";
-import NotificationsPage from "./component/Common/Notification";
-// import Notifications from "./component/ui/Notifications";
+import UserDashboard from "./pages/UserDashboard";
+import NotificationsPage from "./component/common/Notification";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
+import PageNotFound from "./pages/PageNotFound";
 
 const routes = createBrowserRouter([
   {
@@ -27,6 +29,7 @@ const routes = createBrowserRouter([
     children: [
       // PUBLIC ROUTES
       { path: "/", element: <Home /> },
+      { path: "find-donors", element: <FindDonors /> },
       { path: "donors", element: <FindDonors /> },
       { path: "services", element: <Services /> },
       { path: "contact", element: <Contact /> },
@@ -35,6 +38,8 @@ const routes = createBrowserRouter([
       // AUTH ROUTES
       { path: "register", element: <UserRegistration /> },
       { path: "login", element: <UserLogin /> },
+      { path: "forgot-password", element: <ForgotPassword /> },
+      { path: "reset-password/:token", element: <ResetPassword /> },
 
       // PROFILE ROUTES
       {
@@ -71,6 +76,14 @@ const routes = createBrowserRouter([
       },
 
       // DASHBOARD ROUTES
+      {
+        path: "user/dashboard",
+        element: (
+          <ProtectedRoute>
+            <UserDashboard />
+          </ProtectedRoute>
+        ),
+      },
       {
         path: "donor/dashboard",
         element: (
@@ -175,7 +188,7 @@ const routes = createBrowserRouter([
       // },
 
       // CATCH-ALL ROUTE (404)
-      { path: "*", element: <div>404 - Page Not Found</div> },
+      { path: "*", element: <PageNotFound /> },
     ],
   },
 ]);

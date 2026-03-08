@@ -1,4 +1,3 @@
-/* eslint-disable no-unused-vars */
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
@@ -6,22 +5,23 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { motion } from "framer-motion";
 import { FaTint, FaEnvelope, FaLock, FaEye, FaEyeSlash } from "react-icons/fa";
 import { useLoginUserMutation } from "../features/api/bloodApi";
-import FlashMessage from "../component/FlashMessage";
 import { useDispatch } from "react-redux";
 import { setCredentials } from "../features/auth/authSlice";
-import { loginSchema } from "../../../common/validators/user.validator.js";
+import { loginSchema } from "../validators/user.validator.js";
+import FlashMessage from "../component/FlashMessage";
 
 export default function UserLogin() {
     const navigate = useNavigate();
     const dispatch = useDispatch();
 
-    const [flash, setFlash] = useState({ type: "", message: "" });
     const [showPassword, setShowPassword] = useState(false);
+    const [flash, setFlash] = useState({ type: "", message: "" });
     const [loginUser, { isLoading }] = useLoginUserMutation();
 
     const {
         register,
         handleSubmit,
+        reset,
         formState: { errors }
     } = useForm({
         resolver: zodResolver(loginSchema),
@@ -34,60 +34,50 @@ export default function UserLogin() {
     const onSubmit = async (formData) => {
         try {
             const res = await loginUser(formData).unwrap();
-            let userRole = null;
-
-            if (res.user && res.user.role) {
-                userRole = Array.isArray(res.user.role) ? res.user.role[0] : res.user.role;
-            } else if (res.role) {
-                userRole = Array.isArray(res.role) ? res.role[0] : res.role;
-            }
 
             dispatch(setCredentials({
                 token: res.token,
-                role: userRole,
                 user: res.user
             }));
 
             setFlash({ type: "success", message: "Login successful!" });
 
+            reset();
+
             setTimeout(() => {
-                if (userRole === "donor") {
-                    navigate("/donor/dashboard");
-                } else if (userRole === "patient") {
-                    navigate("/patient/dashboard");
-                } else if (userRole === "admin") {
+                const activeRole = res.user?.activeRole || res.user?.role?.[0];
+                if (activeRole === "admin") {
                     navigate("/admin/dashboard");
+                } else if (activeRole === "donor") {
+                    navigate("/donor/dashboard");
+                } else if (activeRole === "patient") {
+                    navigate("/patient/dashboard");
                 } else {
                     navigate("/dashboard");
                 }
             }, 500);
 
         } catch (error) {
-            console.error("Login error:", error);
             let errorMessage = "Invalid credentials";
 
-            if (error?.data?.errors) {
+            if (error?.data?.blocked) {
+                errorMessage = "Account Blocked! Contact admin for support.";
+            } else if (error?.data?.errors && error.data.errors.length > 0) {
                 errorMessage = error.data.errors[0].message;
             } else if (error?.data?.message) {
                 errorMessage = error.data.message;
             }
 
-            setFlash({
-                type: "error",
-                message: errorMessage
-            });
+            setFlash({ type: "error", message: errorMessage });
         }
     };
 
     const inputClass = "w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:border-red-500 focus:ring-2 focus:ring-red-200 outline-none transition bg-white";
 
     return (
-        <div className="min-h-screen bg-gray-50 py-8 px-4">
-            <FlashMessage
-                type={flash.type}
-                message={flash.message}
-                onClose={() => setFlash({ type: "", message: "" })}
-            />
+        <>
+            <FlashMessage flash={flash} setFlash={setFlash} />
+            <div className="min-h-screen bg-gray-50 py-8 px-4">
 
             <div className="max-w-md mx-auto">
                 <div className="text-center mb-8">
@@ -112,6 +102,7 @@ export default function UserLogin() {
                                     {...register("email")}
                                     type="email"
                                     placeholder="you@example.com"
+                                    autoComplete="email"
                                     className={`${inputClass} ${errors.email ? 'border-red-500' : ''}`}
                                 />
                             </div>
@@ -127,6 +118,7 @@ export default function UserLogin() {
                                     {...register("password")}
                                     type={showPassword ? "text" : "password"}
                                     placeholder="Enter your password"
+                                    autoComplete="current-password"
                                     className={`${inputClass} ${errors.password ? 'border-red-500' : ''}`}
                                 />
                                 <button
@@ -155,7 +147,7 @@ export default function UserLogin() {
                             whileTap={{ scale: 0.99 }}
                             type="submit"
                             disabled={isLoading}
-                            className="w-full py-3 rounded-lg font-medium text-white mt-2 bg-red-600 hover:bg-red-700 transition disabled:opacity-50"
+                            className="w-full py-3 rounded-lg font-medium text-white mt-2 bg-red-600 hover:bg-red-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             {isLoading ? (
                                 <span className="flex items-center justify-center gap-2">
@@ -195,6 +187,7 @@ export default function UserLogin() {
                     </p>
                 </div>
             </div>
-        </div>
+            </div>
+        </>
     );
 }

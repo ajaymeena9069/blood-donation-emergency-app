@@ -23,6 +23,18 @@ export const createRequest = async (req, res) => {
             return res.status(404).json({ message: "Patient not found" });
         }
 
+        const existingRequest = await Request.findOne({
+            patientId,
+            status: { $in: ["pending", "accepted"] }
+        });
+
+        if (existingRequest) {
+            return res.status(400).json({
+                success: false,
+                message: "You already have a pending or accepted request. Complete or cancel it first."
+            });
+        }
+
         const matchingDonors = await User.find({
             _id: { $ne: patientId },
             role: "donor",
@@ -46,7 +58,6 @@ export const createRequest = async (req, res) => {
             donorResponses,
         });
 
-        // Notifications + Email (Email failure should not break flow)
         for (const donor of matchingDonors) {
             await createNotification({
                 user: donor._id,
@@ -99,6 +110,34 @@ export const acceptRequest = async (req, res) => {
             return res.status(400).json({ success: false, message: "Invalid request ID" });
         }
 
+        const donor = await User.findById(donorId);
+        const request = await Request.findById(id);
+
+        if (!donor) {
+            return res.status(404).json({ success: false, message: "Donor not found" });
+        }
+
+        if (!request) {
+            return res.status(404).json({ success: false, message: "Request not found" });
+        }
+
+        if (!donor.available && donor.nextEligibleDate) {
+            const now = new Date();
+            const nextEligible = new Date(donor.nextEligibleDate);
+            
+            if (now >= nextEligible) {
+                donor.available = true;
+                donor.nextEligibleDate = null;
+                donor.status = "active";
+                await donor.save();
+            } else {
+                return res.status(400).json({
+                    success: false,
+                    message: `You are not eligible to donate until ${nextEligible.toLocaleDateString()}. Please wait for the eligibility period to complete.`
+                });
+            }
+        }
+
         const existingAcceptedRequest = await Request.findOne({
             status: "accepted",
             acceptedBy: donorId
@@ -107,15 +146,8 @@ export const acceptRequest = async (req, res) => {
         if (existingAcceptedRequest) {
             return res.status(400).json({
                 success: false,
-                message: "You’ve already accepted a blood request. Finish or cancel it first."
+                message: "You've already accepted a blood request. Finish or cancel it first."
             });
-        }
-        const request = await Request.findById(id);
-        const donor = await User.findById(donorId);
-
-
-        if (!request) {
-            return res.status(404).json({ success: false, message: "Request not found" });
         }
 
         if (
@@ -149,14 +181,41 @@ export const acceptRequest = async (req, res) => {
 
         await request.save();
 
-        await Notification.create({
+        await createNotification({
             user: request.patientId,
             forRole: "patient",
             type: "REQUEST_ACCEPTED",
             title: "Request Accepted!",
-            message: `A donor has accepted your ${request.bloodGroup} blood request`,
+            message: `${donor.name} has accepted your ${request.bloodGroup} blood request`,
             requestId: request._id,
         });
+
+        await createNotification({
+            user: donorId,
+            forRole: "donor",
+            type: "REQUEST_ACCEPTED_BY_YOU",
+            title: "Request Accepted Successfully",
+            message: `You have accepted ${request.patientName}'s ${request.bloodGroup} blood request at ${request.hospitalName}`,
+            requestId: request._id,
+        });
+
+        try {
+            const patient = await User.findById(request.patientId);
+            if (patient) {
+                await emailPatientForAcceptance(
+                    patient.email,
+                    patient.name,
+                    donor.name,
+                    {
+                        bloodGroup: request.bloodGroup,
+                        hospitalName: request.hospitalName,
+                        units: request.units
+                    }
+                );
+            }
+        } catch (emailError) {
+            console.error(`Email failed:`, emailError.message);
+        }
 
         res.json({
             success: true,
@@ -203,7 +262,6 @@ export const cancelRequest = async (req, res) => {
             });
         }
 
-        // Check if user is the one who accepted this request
         if (request.acceptedBy.toString() !== userId.toString()) {
             return res.status(403).json({
                 success: false,
@@ -211,7 +269,6 @@ export const cancelRequest = async (req, res) => {
             });
         }
 
-        // Check if request is still in accepted status
         if (request.status !== "accepted") {
             return res.status(400).json({
                 success: false,
@@ -219,7 +276,6 @@ export const cancelRequest = async (req, res) => {
             });
         }
 
-        // Update donor response status
         const donorResponseIndex = request.donorResponses.findIndex(
             (r) => r.donorId.toString() === userId.toString()
         );
@@ -229,30 +285,56 @@ export const cancelRequest = async (req, res) => {
             request.donorResponses[donorResponseIndex].cancellationReason = reason;
         }
 
-        // Add to cancellation history
         request.cancellationHistory.push({
             cancelledBy: userId,
             reason: reason,
             cancelledAt: new Date(),
         });
 
-        // Reset request to pending
         request.status = "pending";
         request.acceptedBy = null;
         request.acceptedAt = null;
 
         await request.save();
 
-        // Create notification for patient
-        const notification = new Notification({
+        await createNotification({
             user: request.patientId,
             forRole: "patient",
             type: "REQUEST_CANCELLED",
             title: "Acceptance Cancelled",
-            message: `A donor has cancelled their acceptance for your ${request.bloodGroup} request`,
+            message: `A donor has cancelled their acceptance for your ${request.bloodGroup} request. Reason: ${reason}`,
+            requestId: request._id,
+            reason: reason
+        });
+
+        await createNotification({
+            user: userId,
+            forRole: "donor",
+            type: "CANCELLATION_CONFIRMED",
+            title: "Cancellation Confirmed",
+            message: `You have cancelled your acceptance for ${request.patientName}'s ${request.bloodGroup} blood request`,
             requestId: request._id,
         });
-        await notification.save();
+
+        try {
+            const patient = await User.findById(request.patientId);
+            if (patient) {
+                const donor = await User.findById(userId);
+                await emailPatientForCancellation(
+                    patient.email,
+                    patient.name,
+                    donor.name,
+                    {
+                        bloodGroup: request.bloodGroup,
+                        hospitalName: request.hospitalName,
+                        units: request.units
+                    },
+                    reason
+                );
+            }
+        } catch (emailError) {
+            console.error(`Email failed:`, emailError.message);
+        }
 
         res.json({
             success: true,
@@ -280,7 +362,6 @@ export const getMatchedRequests = async (req, res) => {
             });
         }
 
-        // Find requests that match donor's blood group
         const requests = await Request.find({
             bloodGroup: user.bloodGroup,
             status: { $in: ["pending", "accepted", "completed"] }
@@ -289,17 +370,14 @@ export const getMatchedRequests = async (req, res) => {
             .populate("acceptedBy", "name phone")
             .sort({ emergency: -1, createdAt: -1 });
 
-        // IMPORTANT: Dusre donors ki accepted requests filter karo
-        // Sirf pending, completed, aur current donor ki accepted requests dikhao
         const filteredRequests = requests.filter(req => {
-            // Agar pending hai toh dikhao
             if (req.status === "pending") return true;
 
-            // Agar completed hai toh dikhao
-            if (req.status === "completed") return true;
-
-            // Agar accepted hai toh sirf current donor ki wali dikhao
             if (req.status === "accepted") {
+                return req.acceptedBy && req.acceptedBy._id.toString() === donorId.toString();
+            }
+
+            if (req.status === "completed") {
                 return req.acceptedBy && req.acceptedBy._id.toString() === donorId.toString();
             }
 
@@ -316,6 +394,7 @@ export const getMatchedRequests = async (req, res) => {
         res.status(500).json({ success: false, message: "Server error" });
     }
 };
+
 /* --------------------------
    GET PATIENT REQUESTS
 --------------------------- */
@@ -395,21 +474,33 @@ export const deleteRequest = async (req, res) => {
             });
         }
 
-        // Notify donor if request was accepted
         if (bloodRequest.status === "accepted" && bloodRequest.acceptedBy) {
             const donor = await User.findById(bloodRequest.acceptedBy);
             if (donor) {
-                await emailDonorForPatientCancellation(
-                    donor.email,
-                    donor.name,
-                    req.user.name,
-                    {
-                        bloodGroup: bloodRequest.bloodGroup,
-                        hospitalName: bloodRequest.hospitalName,
-                        city: bloodRequest.city,
-                        units: bloodRequest.units
-                    }
-                );
+                try {
+                    await emailDonorForPatientCancellation(
+                        donor.email,
+                        donor.name,
+                        req.user.name,
+                        {
+                            bloodGroup: bloodRequest.bloodGroup,
+                            hospitalName: bloodRequest.hospitalName,
+                            city: bloodRequest.city,
+                            units: bloodRequest.units
+                        }
+                    );
+                } catch (emailError) {
+                    console.error(`Email failed for ${donor.email}:`, emailError.message);
+                }
+
+                await createNotification({
+                    user: donor._id,
+                    forRole: "donor",
+                    title: "Request Cancelled by Patient",
+                    message: `${req.user.name} has cancelled the ${bloodRequest.bloodGroup} blood request you accepted`,
+                    type: "REQUEST_CANCELLED_BY_PATIENT",
+                    requestId: bloodRequest._id,
+                });
             }
         }
 
@@ -453,3 +544,84 @@ export const updateRequest = async (req, res) => {
         res.status(500).json({ success: false, message: "Server error" });
     }
 }
+
+/* --------------------------
+   COMPLETE REQUEST
+--------------------------- */
+export const completeRequest = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const userId = req.user.id;
+
+        if (!mongoose.Types.ObjectId.isValid(id)) {
+            return res.status(400).json({ success: false, message: "Invalid request ID" });
+        }
+
+        const request = await Request.findById(id);
+
+        if (!request) {
+            return res.status(404).json({ success: false, message: "Request not found" });
+        }
+
+        if (request.patientId.toString() !== userId) {
+            return res.status(403).json({ success: false, message: "Only patient can complete the request" });
+        }
+
+        if (request.status !== "accepted") {
+            return res.status(400).json({ success: false, message: "Only accepted requests can be completed" });
+        }
+
+        request.status = "completed";
+        request.completedAt = new Date();
+        await request.save();
+
+        if (request.acceptedBy) {
+            const donor = await User.findById(request.acceptedBy);
+            if (donor) {
+                const now = new Date();
+                const nextEligible = new Date(now.getTime() + 90 * 24 * 60 * 60 * 1000);
+
+                donor.available = false;
+                donor.lastDonationDate = now;
+                donor.nextEligibleDate = nextEligible;
+                donor.totalDonations = (donor.totalDonations || 0) + 1;
+                donor.status = "inactive";
+                await donor.save();
+                
+                console.log('Donor updated:', {
+                    id: donor._id,
+                    available: donor.available,
+                    nextEligibleDate: donor.nextEligibleDate,
+                    totalDonations: donor.totalDonations
+                });
+
+                await createNotification({
+                    user: request.acceptedBy,
+                    forRole: "donor",
+                    type: "REQUEST_COMPLETED",
+                    title: "Donation Completed!",
+                    message: `Thank you! ${request.patientName}'s ${request.bloodGroup} blood request completed. You'll be available again on ${nextEligible.toLocaleDateString()}`,
+                    requestId: request._id,
+                });
+            }
+        }
+
+        await createNotification({
+            user: request.patientId,
+            forRole: "patient",
+            type: "REQUEST_COMPLETED",
+            title: "Request Completed",
+            message: `Your ${request.bloodGroup} blood request has been marked as completed`,
+            requestId: request._id,
+        });
+
+        res.json({
+            success: true,
+            message: "Request completed successfully. Donor deactivated for 90 days.",
+            data: request,
+        });
+    } catch (error) {
+        console.error("Complete request error:", error);
+        res.status(500).json({ success: false, message: "Server error" });
+    }
+};

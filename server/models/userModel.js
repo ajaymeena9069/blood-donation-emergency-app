@@ -35,6 +35,15 @@ const userSchema = new mongoose.Schema({
   // --- 4. OPTIONAL / EXTRA FIELDS ---
   address: { type: String, default: "" },
   profilePicture: { type: String, default: "" },
+  status: {
+    type: String,
+    enum: ["active", "inactive", "blocked"],
+    default: "active"
+  },
+  
+  // --- 5. PASSWORD RESET FIELDS ---
+  resetPasswordToken: { type: String },
+  resetPasswordExpire: { type: Date },
 }, { timestamps: true });
 
 const User = mongoose.model("User", userSchema);

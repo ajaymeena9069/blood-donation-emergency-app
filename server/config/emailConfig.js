@@ -1,8 +1,6 @@
 import nodemailer from 'nodemailer';
 import { EMAIL_PASSWORD, EMAIL_USER } from './env.js';
 
-console.log(EMAIL_USER);
-
 const transporter = nodemailer.createTransport({
     service: "gmail",
     auth: {
@@ -13,10 +11,10 @@ const transporter = nodemailer.createTransport({
 
 transporter.verify((error) => {
     if (error) {
-        console.error('❌ Email server error:', error);
+        console.error('❌ Email service error:', error.message);
     } else {
-        console.error('Email service working');
+        console.log('✅ Email service ready');
     }
-})
+});
 
 export default transporter;
