@@ -10,7 +10,7 @@ import FindDonors from "./pages/FindDonors";
 import { Services } from "./pages/Services";
 import Contact from "./pages/Contact";
 import BloodCare from "./pages/BloodCamps";
-import PatientRequests from "./component/common/PatientRequests";
+import PatientRequests from "./component/common/PatientRequests.jsx";
 import SinglePatientRequest from "./component/ui/SinglePatientRequest";
 import DonorMatchingRequests from "./component/ui/DonorMatchingRequests";
 import UserRegistration from "./pages/UserRegistration";
