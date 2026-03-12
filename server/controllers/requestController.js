@@ -121,6 +121,14 @@ export const acceptRequest = async (req, res) => {
             return res.status(404).json({ success: false, message: "Request not found" });
         }
 
+        // Check if donor is trying to accept their own request
+        if (request.patientId.toString() === donorId.toString()) {
+            return res.status(400).json({
+                success: false,
+                message: "You cannot accept your own blood request"
+            });
+        }
+
         if (!donor.available && donor.nextEligibleDate) {
             const now = new Date();
             const nextEligible = new Date(donor.nextEligibleDate);
@@ -363,6 +371,7 @@ export const getMatchedRequests = async (req, res) => {
         }
 
         const requests = await Request.find({
+            patientId: { $ne: donorId }, // Exclude own requests
             bloodGroup: user.bloodGroup,
             status: { $in: ["pending", "accepted", "completed"] }
         })
