@@ -3,6 +3,7 @@ import express from "express";
 import cors from "cors";
 import connectDb from "./config/db.js";
 import { PORT, FRONTEND_URL } from "./config/env.js";
+import { errorHandler, notFound } from "./middlewares/errorHandler.js";
 
 // routes import...
 import donorRoutes from "./routes/donorRoutes.js";
@@ -43,6 +44,10 @@ app.use('/api/stats', statsRoutes);
 app.get('/', (req, res) => {
     res.send("🩸 Blood Donation & Emergency Help API is Running...");
 });
+
+// Error handlers (must be last)
+app.use(notFound);
+app.use(errorHandler);
 
 app.listen(PORT || 3000, () =>
     console.log(`🚀 Server running on port http://localhost:${PORT}`)

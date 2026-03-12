@@ -6,7 +6,8 @@ export default function RoleSwitcher({
     currentRole,
     onRoleSwitch,
     gradientFrom = "from-red-500",
-    gradientTo = "to-red-600"
+    gradientTo = "to-red-600",
+    isLoading = false
 }) {
     const [showRoleModal, setShowRoleModal] = useState(false);
     const [selectedRole, setSelectedRole] = useState(null);

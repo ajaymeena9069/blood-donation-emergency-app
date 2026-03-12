@@ -114,27 +114,36 @@ export default function DonorDashboard() {
             const response = await activateRole(roleId).unwrap();
 
             if (response.success) {
-                if (response.data?.token) {
-                    localStorage.setItem('token', response.data.token);
+                const newToken = response.data?.token;
+                const updatedUser = response.data?.user;
+
+                // Update localStorage
+                if (newToken) {
+                    localStorage.setItem('token', newToken);
                 }
 
+                // Update Redux state
                 dispatch(setCredentials({
-                    token: response.data?.token || localStorage.getItem('token'),
-                    user: response.data?.user || user
+                    token: newToken || localStorage.getItem('token'),
+                    user: updatedUser
                 }));
+
+                // Refetch profile to ensure sync
+                await refetchProfile();
 
                 setFlash({ type: "success", message: `✅ Switched to ${roleId}!` });
 
+                // Navigate immediately
                 setTimeout(() => {
-                    navigate(`/${roleId}/dashboard`);
-                }, 500);
+                    navigate(`/${roleId}/dashboard`, { replace: true });
+                    window.location.reload(); // Force reload to ensure clean state
+                }, 800);
             }
         } catch (error) {
             setFlash({
                 type: "error",
                 message: `❌ ${error?.data?.message || "Failed to switch role"}`
             });
-        } finally {
             setIsSwitchingRole(false);
         }
     };
@@ -245,6 +254,7 @@ export default function DonorDashboard() {
                     onRoleSwitch={handleRoleSwitch}
                     gradientFrom="from-red-500"
                     gradientTo="to-red-600"
+                    isLoading={isSwitchingRole}
                 />
 
                 {/* Welcome Banner */}

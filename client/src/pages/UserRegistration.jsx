@@ -17,6 +17,7 @@ export default function UserRegistration() {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const [flash, setFlash] = useState({ type: "", message: "" });
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [registerUser] = useRegisterUserMutation();
   const [loginUser] = useLoginUserMutation();
 
@@ -51,6 +52,9 @@ export default function UserRegistration() {
   ];
 
   const onSubmit = async (formData) => {
+    if (isSubmitting) return;
+    
+    setIsSubmitting(true);
     try {
       await registerUser(formData).unwrap();
 
@@ -86,6 +90,8 @@ export default function UserRegistration() {
       
       setFlash({ type: "error", message: errorMessage });
       window.scrollTo({ top: 0, behavior: "smooth" });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -243,16 +249,23 @@ export default function UserRegistration() {
 
             <button
               type="submit"
-              disabled={!selectedRole}
+              disabled={!selectedRole || isSubmitting}
               className={`w-full py-3 rounded-lg font-medium text-white transition ${
                 selectedRole === 'donor' 
                   ? 'bg-red-600 hover:bg-red-700' 
                   : selectedRole === 'patient' 
                   ? 'bg-blue-600 hover:bg-blue-700' 
                   : 'bg-gray-600 hover:bg-gray-700'
-              } ${!selectedRole ? 'opacity-50 cursor-not-allowed' : ''}`}
+              } ${!selectedRole || isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
-              {`Register as ${selectedRole === 'donor' ? 'Donor' : selectedRole === 'patient' ? 'Patient' : 'Member'}`}
+              {isSubmitting ? (
+                <span className="flex items-center justify-center gap-2">
+                  <div className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                  Registering...
+                </span>
+              ) : (
+                `Register as ${selectedRole === 'donor' ? 'Donor' : selectedRole === 'patient' ? 'Patient' : 'Member'}`
+              )}
             </button>
           </form>
 

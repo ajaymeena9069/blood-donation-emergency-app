@@ -105,27 +105,33 @@ export default function PatientDashboard() {
             const response = await activateRole(roleId).unwrap();
 
             if (response.success) {
-                if (response.data?.token) {
-                    localStorage.setItem('token', response.data.token);
+                const newToken = response.data?.token;
+                const updatedUser = response.data?.user;
+
+                // Update localStorage
+                if (newToken) {
+                    localStorage.setItem('token', newToken);
                 }
 
+                // Update Redux state
                 dispatch(setCredentials({
-                    token: response.data?.token || localStorage.getItem('token'),
-                    user: response.data?.user || user
+                    token: newToken || localStorage.getItem('token'),
+                    user: updatedUser
                 }));
 
                 setFlash({ type: "success", message: `✅ Switched to ${roleId}!` });
 
+                // Navigate immediately with reload
                 setTimeout(() => {
-                    navigate(`/${roleId}/dashboard`);
-                }, 500);
+                    navigate(`/${roleId}/dashboard`, { replace: true });
+                    window.location.reload(); // Force reload to ensure clean state
+                }, 800);
             }
         } catch (error) {
             setFlash({
                 type: "error",
                 message: `❌ ${error?.data?.message || "Failed to switch role"}`
             });
-        } finally {
             setIsSwitchingRole(false);
         }
     };
@@ -204,6 +210,7 @@ export default function PatientDashboard() {
                     onRoleSwitch={handleRoleSwitch}
                     gradientFrom="from-blue-500"
                     gradientTo="to-blue-600"
+                    isLoading={isSwitchingRole}
                 />
 
                 {/* Welcome Banner */}
