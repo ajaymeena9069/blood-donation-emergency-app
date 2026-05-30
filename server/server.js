@@ -26,7 +26,14 @@ app.set("trust proxy", 1);
 app.use(express.json());
 app.use(
     cors({
-        origin: [FRONTEND_URL, "http://localhost:5173", "https://blood-donation-emergency-app-5jsf.vercel.app"],
+        origin: function (origin, callback) {
+            const allowedOrigins = [FRONTEND_URL, "http://localhost:5173", "https://blood-donation-emergency-app-5jsf.vercel.app"];
+            if (!origin || allowedOrigins.includes(origin) || origin.endsWith(".vercel.app")) {
+                callback(null, true);
+            } else {
+                callback(new Error("Not allowed by CORS"));
+            }
+        },
         credentials: true,
         methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
         allowedHeaders: ['Content-Type', 'Authorization']
