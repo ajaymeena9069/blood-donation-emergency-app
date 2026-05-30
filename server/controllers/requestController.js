@@ -439,8 +439,8 @@ export const getSingleRequest = async (req, res) => {
         }
 
         const request = await Request.findById(id)
-            .populate("patientId", "name email phone")
-            .populate("acceptedBy", "name email phone");
+            .populate("patientId", "name email city bloodGroup phone")
+            .populate("acceptedBy", "name email phone bloodGroup");
 
         if (!request) {
             return res.status(404).json({ success: false, message: "Request not found" });

@@ -84,8 +84,8 @@ export const getAllRequests = async (req, res) => {
 
         const [requests, total] = await Promise.all([
             Request.find(filter)
-                .populate("patientId", "name city bloodGroup phone")
-                .populate("acceptedBy", "name phone")
+                .populate("patientId", "name city bloodGroup phone email")
+                .populate("acceptedBy", "name phone email bloodGroup")
                 .sort({ emergency: -1, createdAt: -1 })
                 .skip(skip)
                 .limit(limitNum),
@@ -406,8 +406,8 @@ export const updateRequestStatus = async (req, res) => {
         }
 
         const request = await Request.findById(id)
-            .populate("patientId", "name email")
-            .populate("acceptedBy", "name");
+            .populate("patientId", "name email city bloodGroup phone")
+            .populate("acceptedBy", "name email phone bloodGroup");
 
         if (!request) {
             return res.status(404).json({
