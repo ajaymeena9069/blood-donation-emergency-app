@@ -19,9 +19,10 @@ const envSchema = z.object({
     FRONTEND_URL: z
         .string()
         .url({ message: "FRONTEND_URL must be a valid URL" })
-        .default("http://localhost:5173")
+        .default("http://localhost:5173"),
+    DISABLE_EMAILS: z.coerce.boolean().default(false)
 });
 
 const env = envSchema.parse(process.env);
 
-export const { PORT, MONGO_URL, JWT_SECRET, BREVO_API_KEY, BREVO_SENDER_EMAIL, FRONTEND_URL } = env;
+export const { PORT, MONGO_URL, JWT_SECRET, BREVO_API_KEY, BREVO_SENDER_EMAIL, FRONTEND_URL, DISABLE_EMAILS } = env;

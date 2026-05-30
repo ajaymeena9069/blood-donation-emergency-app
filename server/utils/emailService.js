@@ -1,9 +1,14 @@
-import { BREVO_API_KEY, BREVO_SENDER_EMAIL, FRONTEND_URL } from "../config/env.js";
+import { BREVO_API_KEY, BREVO_SENDER_EMAIL, FRONTEND_URL, DISABLE_EMAILS } from "../config/env.js";
 
 const BREVO_API_URL = "https://api.brevo.com/v3/smtp/email";
 
 // Helper function to send email using Brevo API
 const sendBrevoEmail = async (toEmail, toName, subject, htmlContent) => {
+  if (DISABLE_EMAILS) {
+    console.log(`⚠️ Email sending is disabled. Skipped email to ${toEmail}`);
+    return { success: true, messageId: "skipped_due_to_disable_flag" };
+  }
+
   try {
     const response = await fetch(BREVO_API_URL, {
       method: "POST",
