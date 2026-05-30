@@ -109,6 +109,7 @@ A comprehensive full-stack blood donation management system that connects blood 
 - **Form Validation**: Real-time validation with helpful error messages
 - **Mobile Bottom Navigation**: Easy navigation on mobile devices
 - **Dark Mode Ready**: Prepared for dark mode implementation
+- **SEO Optimized**: Full meta tags, Open Graph, Twitter Cards, and robots.txt
 
 ### 🔍 Search & Filter
 - **Request Filtering**: Filter by status, emergency, blood group, city
@@ -144,7 +145,7 @@ A comprehensive full-stack blood donation management system that connects blood 
 - **Mongoose**: MongoDB object modeling
 - **JWT**: JSON Web Tokens for authentication
 - **Argon2**: Password hashing algorithm
-- **Nodemailer**: Email sending service
+- **Brevo API**: Native fetch-based email delivery (bypasses Render SMTP blocks)
 - **Zod**: Schema validation
 - **dotenv**: Environment variable management
 
@@ -238,8 +239,8 @@ Blood-Donation-Emergency-Help-App/
 
 ### Clone Repository
 ```bash
-git clone https://github.com/yourusername/blood-donation-app.git
-cd blood-donation-app
+git clone https://github.com/ajaymeena9069/blood-donation-emergency-app.git
+cd blood-donation-emergency-app
 ```
 
 ### Backend Setup
@@ -307,16 +308,17 @@ MONGO_URI=mongodb://localhost:27017/blood-donation
 # JWT Secret (generate with: node -e "console.log(require('crypto').randomBytes(32).toString('hex'))")
 JWT_SECRET=your_super_secret_jwt_key_here
 
-# Email Configuration (Gmail)
-EMAIL_USER=your_email@gmail.com
-EMAIL_PASSWORD=your_gmail_app_password
+# Email Configuration (Brevo)
+BREVO_API_KEY=your_brevo_api_key_here
+BREVO_SENDER_EMAIL=your_verified_sender_email@example.com
 ```
 
-### Gmail App Password Setup
-1. Go to Google Account Settings
-2. Security → 2-Step Verification (enable if not enabled)
-3. App Passwords → Generate new app password
-4. Copy the 16-character password to `EMAIL_PASSWORD`
+### Brevo Email Setup
+Since platforms like Render block standard SMTP ports, this app uses the **Brevo API** natively.
+1. Create a free account at [Brevo.com](https://www.brevo.com/)
+2. Verify your sender email address
+3. Generate an API Key (SMTP & API -> API Keys)
+4. Add the API Key and Sender Email to your `.env` and Render dashboard.
 
 ## 📖 Usage
 
@@ -609,7 +611,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 **Ajay Meena**
 - Email: ajaymeena62408@gmail.com
-- GitHub: [@yourusername](https://github.com/yourusername)
+- GitHub: [@ajaymeena9069](https://github.com/ajaymeena9069)
 
 ## 🙏 Acknowledgments
 
