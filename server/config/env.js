@@ -10,13 +10,8 @@ const envSchema = z.object({
     PORT: z.coerce.number().default(5000),
     MONGO_URL: z.string().url().or(z.string().startsWith("mongodb://")),
     JWT_SECRET: z.string().min(10, "JWT_SECRET must be at least 10 characters long"),
-    EMAIL_USER: z.string()
-        .email("Invalid email address")
-        .toLowerCase()
-        .trim(),
-    EMAIL_PASSWORD: z.string()
-        .min(6, "Password must be at least 6 characters")
-        .max(50, "Password must be less than 50 characters"),
+    BREVO_API_KEY: z.string().min(1, "BREVO_API_KEY is required"),
+    BREVO_SENDER_EMAIL: z.string().email("Invalid sender email address"),
     // FRONTEND_URL is used by the server when constructing links sent to users.
     // Provide a default so the app still starts if the variable is missing or
     // accidentally set to a non-URL during deployment. The schema will coerce
@@ -29,4 +24,4 @@ const envSchema = z.object({
 
 const env = envSchema.parse(process.env);
 
-export const { PORT, MONGO_URL, JWT_SECRET, EMAIL_USER, EMAIL_PASSWORD, FRONTEND_URL } = env;
+export const { PORT, MONGO_URL, JWT_SECRET, BREVO_API_KEY, BREVO_SENDER_EMAIL, FRONTEND_URL } = env;

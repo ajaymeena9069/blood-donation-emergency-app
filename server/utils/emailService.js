@@ -1,15 +1,48 @@
-import transporter from "../config/emailConfig.js";
-import { EMAIL_USER, FRONTEND_URL } from "../config/env.js";
+import { BREVO_API_KEY, BREVO_SENDER_EMAIL, FRONTEND_URL } from "../config/env.js";
 
+const BREVO_API_URL = "https://api.brevo.com/v3/smtp/email";
+
+// Helper function to send email using Brevo API
+const sendBrevoEmail = async (toEmail, toName, subject, htmlContent) => {
+  try {
+    const response = await fetch(BREVO_API_URL, {
+      method: "POST",
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+        "api-key": BREVO_API_KEY,
+      },
+      body: JSON.stringify({
+        sender: {
+          email: BREVO_SENDER_EMAIL,
+          name: "Blood Donation System",
+        },
+        to: [{ email: toEmail, name: toName || toEmail.split("@")[0] }],
+        subject: subject,
+        htmlContent: htmlContent,
+        textContent: "Please view this email in an HTML compatible mail client.",
+      }),
+    });
+
+    const data = await response.json();
+
+    if (response.ok) {
+      console.log(`✅ Email sent to ${toEmail}:`, data.messageId);
+      return { success: true, messageId: data.messageId };
+    } else {
+      console.error(`❌ Brevo API Error sending to ${toEmail}:`, data);
+      return { success: false, error: data.message || "Failed to send email" };
+    }
+  } catch (error) {
+    console.error(`❌ Send email error (${toEmail}):`, error.message);
+    return { success: false, error: error.message };
+  }
+};
 
 export const emailDonorForNewRequest = async (donorEmail, donorName, patientName, requestDetails) => {
-  try {
-    const isEmergency = requestDetails.emergency || false;
-    const mailOptions = {
-      from: `"Blood Donation Emergency Help App" <${EMAIL_USER}>`,
-      to: donorEmail,
-      subject: `${isEmergency ? '🚨 EMERGENCY: ' : ''}New Blood Request in ${requestDetails.city} - ${requestDetails.bloodGroup} Needed`,
-      html: `<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #f8fafc; padding: 20px;">
+  const isEmergency = requestDetails.emergency || false;
+  const subject = `${isEmergency ? '🚨 EMERGENCY: ' : ''}New Blood Request in ${requestDetails.city} - ${requestDetails.bloodGroup} Needed`;
+  const html = `<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #f8fafc; padding: 20px;">
           <div style="background: ${isEmergency ? '#dc2626' : '#3b82f6'}; color: white; padding: 25px; text-align: center; border-radius: 10px 10px 0 0;">
             <h1 style="margin: 0; font-size: 24px;">
               ${isEmergency ? '🚨 EMERGENCY BLOOD REQUEST' : '🆕 New Blood Request'}
@@ -71,25 +104,13 @@ export const emailDonorForNewRequest = async (donorEmail, donorName, patientName
               </p>
             </div>
           </div>
-        </div>
-      `,
-    };
-
-    // const info = await transporter.sendMail(mailOptions);
-    // return { success: true, messageId: info.messageId };
-  } catch (error) {
-    console.error(`❌ Failed to email donor ${donorEmail}:`, error.message);
-    return { success: false, error: error.message };
-  }
+        </div>`;
+  return await sendBrevoEmail(donorEmail, donorName, subject, html);
 };
 
 export const emailPatientForAcceptance = async (patientEmail, patientName, donorName, requestDetails) => {
-  try {
-    const mailOptions = {
-      from: `"Blood Donation System" <${EMAIL_USER}>`,
-      to: patientEmail,
-      subject: `✅ Great News! ${donorName} Accepted Your Blood Request`,
-      html: `
+  const subject = `✅ Great News! ${donorName} Accepted Your Blood Request`;
+  const html = `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #f8fafc; padding: 20px;">
           <div style="background: #10b981; color: white; padding: 25px; text-align: center; border-radius: 10px 10px 0 0;">
             <h1 style="margin: 0; font-size: 24px;">🎉 Your Blood Request Was Accepted!</h1>
@@ -147,25 +168,13 @@ export const emailPatientForAcceptance = async (patientEmail, patientName, donor
             </div>
           </div>
         </div>
-      `,
-    };
-
-    // const info = await transporter.sendMail(mailOptions);
-    // return { success: true, messageId: info.messageId };
-
-  } catch (error) {
-    console.error(`❌ Failed to email patient ${patientEmail}:`, error.message);
-    return { success: false, error: error.message };
-  }
+      `;
+  return await sendBrevoEmail(patientEmail, patientName, subject, html);
 };
 
 export const emailPatientForCancellation = async (patientEmail, patientName, donorName, requestDetails, reason) => {
-  try {
-    const mailOptions = {
-      from: `"Blood Donation System" <${EMAIL_USER}>`,
-      to: patientEmail,
-      subject: `⚠️ Update: ${donorName} Cancelled Your Blood Request`,
-      html: `
+  const subject = `⚠️ Update: ${donorName} Cancelled Your Blood Request`;
+  const html = `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #f8fafc; padding: 20px;">
           <div style="background: #f59e0b; color: white; padding: 25px; text-align: center; border-radius: 10px 10px 0 0;">
             <h1 style="margin: 0; font-size: 24px;">⚠️ Request Cancellation Update</h1>
@@ -237,26 +246,13 @@ export const emailPatientForCancellation = async (patientEmail, patientName, don
             </div>
           </div>
         </div>
-      `,
-    };
-
-    // const info = await transporter.sendMail(mailOptions);
-    // console.log(`✅ Cancellation email sent to ${patientEmail}: ${info.messageId}`);
-    // return { success: true, messageId: info.messageId };
-
-  } catch (error) {
-    console.error(`❌ Failed to send cancellation email to ${patientEmail}:`, error.message);
-    return { success: false, error: error.message };
-  }
+      `;
+  return await sendBrevoEmail(patientEmail, patientName, subject, html);
 };
 
 export const emailDonorForPatientCancellation = async (donorEmail, donorName, patientName, requestDetails, reason) => {
-  try {
-    const mailOptions = {
-      from: `"Blood Donation System" <${EMAIL_USER}>`,
-      to: donorEmail,
-      subject: `⚠️ Update: Blood Request Cancelled by Patient`,
-      html: `
+  const subject = `⚠️ Update: Blood Request Cancelled by Patient`;
+  const html = `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #f8fafc; padding: 20px;">
           <div style="background: #dc2626; color: white; padding: 25px; text-align: center; border-radius: 10px 10px 0 0;">
             <h1 style="margin: 0; font-size: 24px;">⚠️ Request Cancelled</h1>
@@ -344,26 +340,13 @@ export const emailDonorForPatientCancellation = async (donorEmail, donorName, pa
             </div>
           </div>
         </div>
-      `,
-    };
-
-    // const info = await transporter.sendMail(mailOptions);
-    // console.log(`✅ Patient cancellation email sent to donor ${donorEmail}: ${info.messageId}`);
-    // return { success: true, messageId: info.messageId };
-
-  } catch (error) {
-    console.error(`❌ Failed to send cancellation email to donor ${donorEmail}:`, error.message);
-    return { success: false, error: error.message };
-  }
+      `;
+  return await sendBrevoEmail(donorEmail, donorName, subject, html);
 };
 
 export const sendPasswordResetEmail = async (userEmail, userName, resetUrl) => {
-  try {
-    const mailOptions = {
-      from: `"Blood Donation System" <${EMAIL_USER}>`,
-      to: userEmail,
-      subject: `🔐 Password Reset Request - Blood Donation System`,
-      html: `
+  const subject = `🔐 Password Reset Request - Blood Donation System`;
+  const html = `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #f8fafc; padding: 20px;">
           <div style="background: #3b82f6; color: white; padding: 25px; text-align: center; border-radius: 10px 10px 0 0;">
             <h1 style="margin: 0; font-size: 24px;">🔐 Password Reset Request</h1>
@@ -410,26 +393,13 @@ export const sendPasswordResetEmail = async (userEmail, userName, resetUrl) => {
             </div>
           </div>
         </div>
-      `,
-    };
-
-    const info = await transporter.sendMail(mailOptions);
-    console.log(`✅ Password reset email sent to ${userEmail}: ${info.messageId}`);
-    return { success: true, messageId: info.messageId };
-
-  } catch (error) {
-    console.error(`❌ Failed to send password reset email to ${userEmail}:`, error.message);
-    throw error;
-  }
+      `;
+  return await sendBrevoEmail(userEmail, userName, subject, html);
 };
 
 export const sendNewUserCredentials = async (userEmail, userName, password, role) => {
-  try {
-    const mailOptions = {
-      from: `"Blood Donation System" <${EMAIL_USER}>`,
-      to: userEmail,
-      subject: `🎉 Welcome to Blood Donation System - Your Account Details`,
-      html: `
+  const subject = `🎉 Welcome to Blood Donation System - Your Account Details`;
+  const html = `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #f8fafc; padding: 20px;">
           <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 25px; text-align: center; border-radius: 10px 10px 0 0;">
             <h1 style="margin: 0; font-size: 24px;">🎉 Welcome to Blood Donation System!</h1>
@@ -489,26 +459,13 @@ export const sendNewUserCredentials = async (userEmail, userName, password, role
             </div>
           </div>
         </div>
-      `,
-    };
-
-    const info = await transporter.sendMail(mailOptions);
-    console.log(`✅ Credentials email sent to ${userEmail}: ${info.messageId}`);
-    return { success: true, messageId: info.messageId };
-
-  } catch (error) {
-    console.error(`❌ Failed to send credentials email to ${userEmail}:`, error.message);
-    return { success: false, error: error.message };
-  }
+      `;
+  return await sendBrevoEmail(userEmail, userName, subject, html);
 };
 
 export const sendRequestRejectionEmail = async (patientEmail, patientName, bloodGroup, rejectionReason) => {
-  try {
-    const mailOptions = {
-      from: `"Blood Donation System" <${EMAIL_USER}>`,
-      to: patientEmail,
-      subject: `❌ Blood Request Rejected - ${bloodGroup}`,
-      html: `
+  const subject = `❌ Blood Request Rejected - ${bloodGroup}`;
+  const html = `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #f8fafc; padding: 20px;">
           <div style="background: #dc2626; color: white; padding: 25px; text-align: center; border-radius: 10px 10px 0 0;">
             <h1 style="margin: 0; font-size: 24px;">❌ Request Rejected</h1>
@@ -557,15 +514,6 @@ export const sendRequestRejectionEmail = async (patientEmail, patientName, blood
             </div>
           </div>
         </div>
-      `,
-    };
-
-    const info = await transporter.sendMail(mailOptions);
-    console.log(`✅ Rejection email sent to ${patientEmail}: ${info.messageId}`);
-    return { success: true, messageId: info.messageId };
-
-  } catch (error) {
-    console.error(`❌ Failed to send rejection email to ${patientEmail}:`, error.message);
-    return { success: false, error: error.message };
-  }
+      `;
+  return await sendBrevoEmail(patientEmail, patientName, subject, html);
 };

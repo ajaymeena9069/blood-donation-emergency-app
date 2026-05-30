@@ -70,13 +70,11 @@ export default function Navbar() {
       }
     };
 
-    // Close on scroll (for better UX)
+    // Close on scroll (for better UX) - Modified: Only update isScrolled state
+    // We removed the menu closing logic here because on mobile, opening the menu 
+    // can trigger a slight scroll, instantly closing it again and making it feel broken.
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 20);
-      if (toggle || dropdownOpen) {
-        setToggle(false);
-        setDropdownOpen(false);
-      }
     };
 
     document.addEventListener('mousedown', handleClickOutside);
