@@ -325,7 +325,7 @@ export const forgotPassword = async (req, res) => {
         await user.save();
 
         // Send email
-        const resetUrl = `https://blood-donation-emergency-app-5jsf.vercel.app/reset-password/${resetToken}`;
+        const resetUrl = `https://blood-donation-emergency-app-01.vercel.app/reset-password/${resetToken}`;
         
         try {
             await sendPasswordResetEmail(user.email, user.name, resetUrl);

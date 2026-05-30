@@ -27,7 +27,7 @@ app.use(express.json());
 app.use(
     cors({
         origin: function (origin, callback) {
-            const allowedOrigins = [FRONTEND_URL, "http://localhost:5173", "https://blood-donation-emergency-app-5jsf.vercel.app"];
+            const allowedOrigins = [FRONTEND_URL, "http://localhost:5173", "https://blood-donation-emergency-app-01.vercel.app"];
             if (!origin || allowedOrigins.includes(origin) || origin.endsWith(".vercel.app")) {
                 callback(null, true);
             } else {
