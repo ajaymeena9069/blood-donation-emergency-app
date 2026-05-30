@@ -12,7 +12,7 @@ export default function DonorMatchesList({ matches, loading, getStatusConfig, fo
                     <h2 className="text-lg font-bold text-gray-900">Recent Blood Requests</h2>
                     <p className="text-gray-600 text-sm">Blood requests matching your profile</p>
                 </div>
-                <NavLink to="/donor/matches/all" className="text-red-600 hover:text-red-700 text-sm font-medium flex items-center gap-1">
+                <NavLink to="/donor/matches?status=all" className="text-red-600 hover:text-red-700 text-sm font-medium flex items-center gap-1">
                     View All <FaArrowRight />
                 </NavLink>
             </div>
