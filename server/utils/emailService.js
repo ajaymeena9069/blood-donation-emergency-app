@@ -89,7 +89,7 @@ export const emailDonorForNewRequest = async (donorEmail, donorName, patientName
             </div>
             
             <div style="text-align: center; margin: 30px 0;">
-              <a href="${FRONTEND_URL || 'http://localhost:3000'}/donor/matching-requests" 
+              <a href="https://blood-donation-emergency-app-5jsf.vercel.app/donor/matching-requests" 
                  style="background: ${isEmergency ? '#dc2626' : '#10b981'}; color: white; padding: 14px 30px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block; font-size: 16px;">
                 👉 View & Accept Request
               </a>
@@ -98,7 +98,7 @@ export const emailDonorForNewRequest = async (donorEmail, donorName, patientName
             <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb; color: #6b7280; font-size: 14px;">
               <p><strong>Note:</strong> This email was sent because your blood group (${requestDetails.bloodGroup}) and location (${requestDetails.city}) match this request.</p>
               <p style="margin-top: 10px;">
-                <a href="${FRONTEND_URL || 'http://localhost:3000'}/settings" style="color: #3b82f6; text-decoration: none;">
+                <a href="https://blood-donation-emergency-app-5jsf.vercel.app/settings" style="color: #3b82f6; text-decoration: none;">
                   Manage notification preferences
                 </a>
               </p>
@@ -156,7 +156,7 @@ export const emailPatientForAcceptance = async (patientEmail, patientName, donor
             </div>
             
             <div style="text-align: center; margin: 30px 0;">
-              <a href="${FRONTEND_URL || 'http://localhost:3000'}/patient/requests" 
+              <a href="https://blood-donation-emergency-app-5jsf.vercel.app/patient/requests" 
                  style="background: #3b82f6; color: white; padding: 14px 30px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block; font-size: 16px;">
                 📊 View Request Status
               </a>
@@ -228,7 +228,7 @@ export const emailPatientForCancellation = async (patientEmail, patientName, don
             </div>
             
             <div style="text-align: center; margin: 30px 0;">
-              <a href="${FRONTEND_URL || 'http://localhost:3000'}/patient/requests" 
+              <a href="https://blood-donation-emergency-app-5jsf.vercel.app/patient/requests" 
                  style="background: #3b82f6; color: white; padding: 14px 30px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block; font-size: 16px;">
                 📋 View & Manage Your Requests
               </a>
@@ -322,7 +322,7 @@ export const emailDonorForPatientCancellation = async (donorEmail, donorName, pa
             </div>
             
             <div style="text-align: center; margin: 30px 0;">
-              <a href="${FRONTEND_URL || 'http://localhost:3000'}/donor/matches" 
+              <a href="https://blood-donation-emergency-app-5jsf.vercel.app/donor/matches" 
                  style="background: #3b82f6; color: white; padding: 14px 30px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block; font-size: 16px;">
                 🔍 View Other Matching Requests
               </a>
@@ -437,7 +437,7 @@ export const sendNewUserCredentials = async (userEmail, userName, password, role
             </div>
             
             <div style="text-align: center; margin: 30px 0;">
-              <a href="${FRONTEND_URL || 'http://localhost:3000'}/login" 
+              <a href="https://blood-donation-emergency-app-5jsf.vercel.app/login" 
                  style="background: #10b981; color: white; padding: 14px 30px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block; font-size: 16px;">
                 🚀 Login Now
               </a>
@@ -496,7 +496,7 @@ export const sendRequestRejectionEmail = async (patientEmail, patientName, blood
             </div>
             
             <div style="text-align: center; margin: 30px 0;">
-              <a href="${FRONTEND_URL || 'http://localhost:3000'}/patient/create/request" 
+              <a href="https://blood-donation-emergency-app-5jsf.vercel.app/patient/create/request" 
                  style="background: #3b82f6; color: white; padding: 14px 30px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block; font-size: 16px;">
                 📝 Create New Request
               </a>
