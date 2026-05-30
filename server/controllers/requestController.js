@@ -450,9 +450,11 @@ export const getSingleRequest = async (req, res) => {
         const isMatchedDonor = request.donorResponses.some(
             (d) => d.donorId.toString() === userId
         );
+        const isAdmin = req.user.role && req.user.role.includes("admin");
+        const isEligibleDonor = req.user.role && req.user.role.includes("donor") && req.user.bloodGroup === request.bloodGroup;
 
-        if (!isPatient && !isMatchedDonor) {
-            return res.status(403).json({ success: false, message: "Not authorized" });
+        if (!isPatient && !isMatchedDonor && !isAdmin && !isEligibleDonor) {
+            return res.status(403).json({ success: false, message: "Not authorized to view this request" });
         }
 
         res.status(200).json({ success: true, data: request });
