@@ -19,6 +19,9 @@ connectDb();
 
 const app = express();
 
+// Trust Render's load balancer proxy so rate-limiting works correctly
+app.set("trust proxy", 1);
+
 // middleware...
 app.use(express.json());
 app.use(
