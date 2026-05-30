@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://blood-donation-emergency-app-5jsf.vercel.app/sitemap.xml
