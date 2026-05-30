@@ -122,7 +122,7 @@ export const bloodApi = createApi({
 
         updateRequest: builder.mutation({
             query: ({ id, ...data }) => ({
-                url: `request/${id}`, // YEH CHECK KARO
+                url: `/request/${id}`, // YEH CHECK KARO
                 method: 'PUT',
                 body: data
             })
