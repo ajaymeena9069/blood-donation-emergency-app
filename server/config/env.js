@@ -20,7 +20,7 @@ const envSchema = z.object({
         .string()
         .url({ message: "FRONTEND_URL must be a valid URL" })
         .default("http://localhost:5173"),
-    DISABLE_EMAILS: z.coerce.boolean().default(false)
+    DISABLE_EMAILS: z.string().optional().transform(val => val === "true")
 });
 
 const env = envSchema.parse(process.env);
